@@ -1,4 +1,4 @@
-package com.example.anibey_codex_tfg.ui.theme
+package com.example.anibey_codex_tfg.ui.common.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -8,6 +8,10 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color.Companion.Black
+import androidx.compose.ui.graphics.Color.Companion.DarkGray
+import androidx.compose.ui.graphics.Color.Companion.LightGray
+import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.platform.LocalContext
 val LightColorScheme = lightColorScheme(
     primary = PrimaryRed,
@@ -25,7 +29,6 @@ val DarkColorScheme = darkColorScheme(
     primary = PrimaryRed,
     secondary = SecondaryRed,
     tertiary = White,
-    background = BackgroundBlack,
     surface = DarkGray,
     onPrimary = White,
     onSecondary = White,
