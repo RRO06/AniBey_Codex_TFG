@@ -13,22 +13,45 @@ class LoginViewModel @Inject constructor() : ViewModel() {
     var state by mutableStateOf(LoginState())
         private set
 
+    private fun validateCurrentStep(): Boolean {
+        return when (state.currentStep) {
+            RegistrationStep.CREDENTIALS -> {
+                val emailValid = android.util.Patterns.EMAIL_ADDRESS.matcher(state.email).matches()
+                val passValid = state.password.length >= 6
+
+                state = state.copy(
+                    emailError = if (!emailValid) "Email no válido" else null,
+                    passwordError = if (!passValid) "Mínimo 6 caracteres" else null
+                )
+                emailValid && passValid
+            }
+            RegistrationStep.CHARACTER_INFO -> {
+                val userValid = state.username.isNotBlank()
+                state = state.copy(
+                    usernameError = if (!userValid) "El nombre no puede estar vacío" else null
+                )
+                userValid
+            }
+            RegistrationStep.FINALIZING -> true
+        }
+    }
     fun onEmailChange(newValue: String) {
-        state = state.copy(email = newValue)
+        state = state.copy(email = newValue, emailError = null)
     }
 
     fun onPasswordChange(newValue: String) {
-        state = state.copy(password = newValue)
+        state = state.copy(password = newValue, passwordError = null)
     }
 
     fun onUsernameChange(newValue: String) {
-        state = state.copy(username = newValue)
+        state = state.copy(username = newValue, usernameError = null)
     }
-
     fun onNextStep() {
-        val nextOrdinal = state.currentStep.ordinal + 1
-        if (nextOrdinal < RegistrationStep.entries.size) {
-            state = state.copy(currentStep = RegistrationStep.entries[nextOrdinal])
+        if (validateCurrentStep()) {
+            val nextOrdinal = state.currentStep.ordinal + 1
+            if (nextOrdinal < RegistrationStep.entries.size) {
+                state = state.copy(currentStep = RegistrationStep.entries[nextOrdinal])
+            }
         }
     }
 
@@ -40,10 +63,9 @@ class LoginViewModel @Inject constructor() : ViewModel() {
     }
 
     fun onLoginSubmit() {
-        // Aquí iría la llamada a Firebase o tu repositorio
-        state = state.copy(isLoading = true)
-
-        // Simulación de éxito
-        println("Registrando a ${state.username} con el email ${state.email}")
+        if (validateCurrentStep()) {
+            state = state.copy(isLoading = true)
+            // Lógica de Firebase...
+        }
     }
 }

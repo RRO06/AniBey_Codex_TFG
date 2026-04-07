@@ -7,6 +7,19 @@ y el versionado utiliza Semantic Versioning.
 
 ---
 
+## [0.0.3] - 2026-04-07
+
+### Añadido
+- 
+
+### Modificado
+- Componente AnimaTextField para que se pueda ver la contraseña
+
+### Corregido
+- La validación del inicio y registro
+
+---
+
 ## [0.0.2] - 2026-03-27
 
 ### Añadido

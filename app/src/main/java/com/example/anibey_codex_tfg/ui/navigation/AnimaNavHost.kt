@@ -12,6 +12,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.example.anibey_codex_tfg.ui.login.ui.LoginScreen
 import com.example.anibey_codex_tfg.ui.screens.login.LoginViewModel
 import com.example.anibey_codex_tfg.ui.welcome.ui.WelcomeScreen
@@ -52,17 +53,19 @@ fun AnimaNavHost(modifier : Modifier) {
         // RUTA: WELCOME
         composable<Screen.Welcome> {
             WelcomeScreen(
-                onLoginSelected = { navController.navigate(Screen.Login) },
+                onLoginSelected = { navController.navigate(Screen.Login(isRegister = false)) },
                 onGuestSelected = { /* Próximamente: Screen.Home */ },
-                onRegisterSelected = { navController.navigate(Screen.Login) },
+                onRegisterSelected = { navController.navigate(Screen.Login(isRegister = true)) },
                 modifier = modifier
             )
         }
 
-        // RUTA: LOGIN (CON VIEWMODEL INYECTADO)
-        composable<Screen.Login> {
+        // RUTA: LOGIN
+        composable<Screen.Login> { backStackEntry ->
+            val args = backStackEntry.toRoute<Screen.Login>()
             val loginViewModel: LoginViewModel = hiltViewModel()
             LoginScreen(
+                isRegister = args.isRegister,
                 viewModel = loginViewModel,
                 onNavigateBack = { navController.popBackStack() },
                 onLoginSuccess = {

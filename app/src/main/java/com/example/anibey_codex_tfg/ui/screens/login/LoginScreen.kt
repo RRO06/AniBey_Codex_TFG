@@ -20,7 +20,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.paint
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -47,7 +46,8 @@ fun LoginScreen(
     viewModel: LoginViewModel,
     onNavigateBack: () -> Unit,
     onLoginSuccess: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isRegister: Boolean
 ) {
     val state = viewModel.state
 
@@ -55,7 +55,14 @@ fun LoginScreen(
         onEmailChange = viewModel::onEmailChange,
         onPasswordChange = viewModel::onPasswordChange,
         onUsernameChange = viewModel::onUsernameChange,
-        onNextStep = viewModel::onNextStep,
+        onNextStep = {
+            if (!isRegister && state.currentStep == RegistrationStep.CREDENTIALS) {
+                viewModel.onLoginSubmit()
+                onLoginSuccess()
+            } else {
+                viewModel.onNextStep()
+            }
+        },
         onBackStep = {
             if (state.currentStep.ordinal == 0) {
                 onNavigateBack()
@@ -70,6 +77,7 @@ fun LoginScreen(
     )
 
     LoginScreenContent(
+        isRegister = isRegister,
         state = state,
         actions = actions,
         modifier = modifier
@@ -78,6 +86,7 @@ fun LoginScreen(
 
 @Composable
 fun LoginScreenContent(
+    isRegister: Boolean,
     state: LoginState,
     actions: LoginActions,
     modifier: Modifier
@@ -97,19 +106,23 @@ fun LoginScreenContent(
                 .padding(horizontal = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            LoginHeader(step = state.currentStep)
+            LoginHeader(step = state.currentStep, isRegister = isRegister)
 
-            RegistrationProgressBar(currentStep = state.currentStep)
+            // Solo mostrar barra de progreso si es un registro
+            if (isRegister) {
+                RegistrationProgressBar(currentStep = state.currentStep)
+            }
 
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.Center
             ) {
-                LoginStepFields(state = state, actions = actions)
+                LoginStepFields(state = state, actions = actions, isRegister = isRegister)
             }
 
             LoginNavigationButtons(
                 currentStep = state.currentStep,
+                isRegister = isRegister,
                 actions = actions
             )
         }
@@ -117,9 +130,9 @@ fun LoginScreenContent(
 }
 
 @Composable
-private fun LoginHeader(step: RegistrationStep) {
+private fun LoginHeader(step: RegistrationStep, isRegister: Boolean) {
     val title = when (step) {
-        RegistrationStep.CREDENTIALS -> "VINCULACIÓN"
+        RegistrationStep.CREDENTIALS -> if (isRegister) "VINCULACIÓN" else "ESENCIA"
         RegistrationStep.CHARACTER_INFO -> "IDENTIDAD"
         RegistrationStep.FINALIZING -> "EL PACTO"
     }
@@ -129,11 +142,7 @@ private fun LoginHeader(step: RegistrationStep) {
         style = MaterialTheme.typography.displaySmall.copy(
             fontWeight = FontWeight.Black,
             letterSpacing = 6.sp,
-            shadow = Shadow(
-                color = Color.White.copy(alpha = 0.7f),
-                offset = Offset(0f, 0f),
-                blurRadius = 12f
-            )
+            shadow = Shadow(color = Color.White.copy(alpha = 0.7f), blurRadius = 12f)
         ),
         color = Color(0xFF1A1A1A),
         modifier = Modifier.padding(top = 80.dp)
@@ -141,19 +150,39 @@ private fun LoginHeader(step: RegistrationStep) {
 }
 
 @Composable
-private fun LoginStepFields(state: LoginState, actions: LoginActions) {
+private fun LoginStepFields(state: LoginState, actions: LoginActions, isRegister: Boolean) {
     when (state.currentStep) {
         RegistrationStep.CREDENTIALS -> {
-            AnimaTextField(state.email, actions.onEmailChange, "Email de contacto")
+            AnimaTextField(
+                value = state.email,
+                onValueChange = actions.onEmailChange,
+                label = "E-mail de contacto",
+                errorMessage = state.emailError
+            )
             Spacer(modifier = Modifier.height(24.dp))
-            AnimaTextField(state.password, actions.onPasswordChange, "Contraseña mística", isPassword = true)
+            AnimaTextField(
+                value = state.password,
+                onValueChange = actions.onPasswordChange,
+                label = if (isRegister) "Contraseña Mística" else "Clave de Acceso",
+                isPassword = true,
+                errorMessage = state.passwordError
+            )
         }
         RegistrationStep.CHARACTER_INFO -> {
-            AnimaTextField(state.username, actions.onUsernameChange, "Nombre del viajero")
+            AnimaTextField(
+                value = state.username,
+                onValueChange = actions.onUsernameChange,
+                label = "Apodo del Viajero",
+                errorMessage = state.usernameError
+            )
         }
         RegistrationStep.FINALIZING -> {
+            val text = if (isRegister)
+                "Tu alma ha sido vinculada al Códice de Gaia.\n¿Deseas sellar el pacto?"
+            else "Bienvenido de nuevo, viajero.\n¿Deseas despertar tus recuerdos?"
+
             Text(
-                text = "Tu alma ha sido vinculada al Códice de Gaia.\n¿Deseas sellar el pacto?",
+                text = text,
                 style = MaterialTheme.typography.bodyLarge.copy(
                     lineHeight = 28.sp,
                     textAlign = TextAlign.Center,
@@ -166,38 +195,40 @@ private fun LoginStepFields(state: LoginState, actions: LoginActions) {
 }
 
 @Composable
-private fun LoginNavigationButtons(currentStep: RegistrationStep, actions: LoginActions) {
+private fun LoginNavigationButtons(
+    currentStep: RegistrationStep,
+    isRegister: Boolean,
+    actions: LoginActions
+) {
+    val isLastStep = currentStep == RegistrationStep.FINALIZING || (!isRegister && currentStep == RegistrationStep.CREDENTIALS)
+
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 60.dp),
+        modifier = Modifier.fillMaxWidth().padding(bottom = 60.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Botón Volver
         if (currentStep != RegistrationStep.CREDENTIALS) {
             TextButton(onClick = actions.onBackStep) {
-                Text(
-                    text = "VOLVER",
-                    color = Color.Black.copy(alpha = 0.5f),
-                    style = MaterialTheme.typography.labelLarge
-                )
+                Text("VOLVER", color = Color.Black.copy(alpha = 0.5f))
             }
         } else {
             Spacer(modifier = Modifier.width(10.dp))
         }
 
+        // Botón Principal
         Button(
-            onClick = if (currentStep == RegistrationStep.FINALIZING) actions.onLoginSubmit else actions.onNextStep,
-            modifier = Modifier
-                .height(50.dp)
-                .width(140.dp),
+            onClick = if (isLastStep) actions.onLoginSubmit else actions.onNextStep,
+            modifier = Modifier.height(50.dp).width(160.dp),
             shape = RoundedCornerShape(2.dp),
             colors = ButtonDefaults.buttonColors(containerColor = PrimaryRed)
         ) {
-            Text(
-                text = if (currentStep == RegistrationStep.FINALIZING) "SELLAR" else "SEGUIR",
-                style = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp)
-            )
+            val buttonText = when {
+                isRegister && currentStep == RegistrationStep.FINALIZING -> "SELLAR"
+                !isRegister -> "DESPERTAR"
+                else -> "SEGUIR"
+            }
+            Text(text = buttonText, style = MaterialTheme.typography.titleMedium)
         }
     }
 }
@@ -206,6 +237,7 @@ private fun LoginNavigationButtons(currentStep: RegistrationStep, actions: Login
 @Composable
 fun LoginScreenContentPreview() {
     LoginScreenContent(
+        isRegister = true,
         state = LoginState(),
         actions = LoginActions(),
         Modifier

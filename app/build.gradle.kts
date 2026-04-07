@@ -4,7 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.dagger.hilt)
-    alias(libs.plugins.google.ksp) // <-- Añadido KSP
+    alias(libs.plugins.google.ksp)
 }
 
 android {
@@ -54,6 +54,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
 
     // Navegación & Serialización
     implementation(libs.androidx.navigation.compose)
@@ -62,7 +63,8 @@ dependencies {
 
     // Hilt con KSP (Sustituye a kapt)
     implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler) // <-- Aquí está el cambio a KSP
+    implementation(libs.androidx.compose.animation.core.lint)
+    ksp(libs.hilt.compiler)
 
     // Testing
     testImplementation(libs.junit)

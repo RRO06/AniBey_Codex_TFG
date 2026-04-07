@@ -15,8 +15,11 @@ data class LoginActions(
 )
 data class LoginState(
     val email: String = "",
+    val emailError: String? = null,
     val password: String = "",
+    val passwordError: String? = null,
     val username: String = "",
+    val usernameError: String? = null,
     val currentStep: RegistrationStep = RegistrationStep.CREDENTIALS,
     val isLoading: Boolean = false
 )
