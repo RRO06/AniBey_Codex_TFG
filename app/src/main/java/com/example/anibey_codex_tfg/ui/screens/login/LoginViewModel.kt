@@ -1,5 +1,6 @@
 package com.example.anibey_codex_tfg.ui.screens.login
 
+import LoginState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -8,8 +9,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.anibey_codex_tfg.data.local.datastore.SessionDataStore
 import com.example.anibey_codex_tfg.domain.model.UserProfile
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.auth.actionCodeSettings
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -17,7 +16,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    val auth: FirebaseAuth,
+    private val auth: FirebaseAuth,
     private val db: FirebaseFirestore,
     private val sessionDataStore: SessionDataStore
 ) : ViewModel() {
@@ -25,111 +24,101 @@ class LoginViewModel @Inject constructor(
     var state by mutableStateOf(LoginState())
         private set
 
-    fun setIsRegistering(value: Boolean) {
-        state = state.copy(isRegistering = value)
-    }
+    // --- MANEJO DE INPUTS ---
 
     fun onEmailChange(newValue: String) {
         state = state.copy(email = newValue, emailError = null)
     }
 
-    fun onUsernameChange(newValue: String) {
-        state = state.copy(username = newValue, usernameError = null)
+    fun onPasswordChange(newValue: String) {
+        state = state.copy(password = newValue, passwordError = null)
     }
 
-    private fun validateCurrentStep(): Boolean {
-        return when (state.currentStep) {
-            RegistrationStep.CREDENTIALS -> {
-                val emailValid = android.util.Patterns.EMAIL_ADDRESS.matcher(state.email).matches()
-                state = state.copy(emailError = if (!emailValid) "Email no reconocido" else null)
-                emailValid
-            }
-            RegistrationStep.CHARACTER_INFO -> {
-                val userValid = state.username.isNotBlank()
-                state = state.copy(usernameError = if (!userValid) "El nombre es obligatorio" else null)
-                userValid
-            }
-            RegistrationStep.FINALIZING -> true
-        }
+    fun toggleRecoveryMode(enabled: Boolean) {
+        state = state.copy(
+            isRecoveryMode = enabled,
+            isRecoveryMailSent = false,
+            emailError = null
+        )
     }
 
-    fun onNextStep() {
-        if (validateCurrentStep()) {
-            val nextOrdinal = state.currentStep.ordinal + 1
-            if (nextOrdinal < RegistrationStep.entries.size) {
-                state = state.copy(currentStep = RegistrationStep.entries[nextOrdinal])
-            }
-        }
-    }
+    // --- LÓGICA DE AUTENTICACIÓN ---
 
-    fun onBackStep() {
-        val prevOrdinal = state.currentStep.ordinal - 1
-        if (prevOrdinal >= 0) {
-            state = state.copy(currentStep = RegistrationStep.entries[prevOrdinal])
-        }
-    }
+    /**
+     * Intenta iniciar sesión con Email y Contraseña.
+     * Si tiene éxito, busca el perfil en Firestore y lo guarda en DataStore.
+     */
+    fun onLoginSubmit(onSuccess: () -> Unit) {
+        if (!validateLoginForm()) return
 
-    fun onLoginSubmit() {
-        if (!validateCurrentStep()) return
-        sendSpiritWhisper()
-    }
-
-    fun sendSpiritWhisper() {
         state = state.copy(isLoading = true)
-        val actionCodeSettings = actionCodeSettings {
-            url = "https://anibeycodex.page.link/finish_auth"
-            handleCodeInApp = true
-            setAndroidPackageName("com.example.anibey_codex_tfg", true, "24")
-        }
 
-        auth.sendSignInLinkToEmail(state.email, actionCodeSettings)
-            .addOnSuccessListener {
-                state = state.copy(isLoading = false, isCodeSent = true)
+        auth.signInWithEmailAndPassword(state.email, state.password)
+            .addOnSuccessListener { authResult ->
+                val uid = authResult.user?.uid
+                if (uid != null) {
+                    fetchUserProfileAndNavigate(uid, onSuccess)
+                } else {
+                    state = state.copy(isLoading = false, emailError = "Error de identidad")
+                }
             }
             .addOnFailureListener {
-                state = state.copy(isLoading = false, emailError = "Error: ${it.localizedMessage}")
+                state = state.copy(
+                    isLoading = false,
+                    emailError = "El vínculo ha fallado: credenciales incorrectas"
+                )
             }
     }
 
-    // Esta es la función clave que llamará el NavHost
-    fun completeSpiritLink(emailLink: String, isRegister: Boolean, onComplete: () -> Unit) {
-        if (auth.isSignInWithEmailLink(emailLink)) {
-            state = state.copy(isLoading = true)
-            auth.signInWithEmailLink(state.email, emailLink)
-                .addOnSuccessListener { authResult ->
-                    checkUserInFirestore(authResult.user, isRegister, onComplete)
-                }
-                .addOnFailureListener {
-                    state = state.copy(isLoading = false, emailError = "Vínculo roto")
-                }
+    /**
+     * Envía un correo de recuperación de contraseña a través de Firebase.
+     */
+    fun sendRecoveryEmail() {
+        if (state.email.isBlank()) {
+            state = state.copy(emailError = "Escribe tu e-mail para el susurro")
+            return
         }
+
+        state = state.copy(isLoading = true)
+        auth.sendPasswordResetEmail(state.email)
+            .addOnSuccessListener {
+                state = state.copy(isLoading = false, isRecoveryMailSent = true)
+            }
+            .addOnFailureListener {
+                state = state.copy(isLoading = false, emailError = "El vacío no responde a este e-mail")
+            }
     }
 
-    private fun checkUserInFirestore(user: FirebaseUser?, isRegister: Boolean, onComplete: () -> Unit) {
-        val uid = user?.uid ?: return
-        val email = user.email ?: ""
+    // --- FUNCIONES DE APOYO ---
 
-        db.collection("users").document(uid).get().addOnSuccessListener { doc ->
-            if (doc.exists()) {
-                val profile = doc.toObject(UserProfile::class.java)
-                profile?.let {
+    private fun validateLoginForm(): Boolean {
+        val isEmailValid = android.util.Patterns.EMAIL_ADDRESS.matcher(state.email).matches()
+        val isPasswordValid = state.password.length >= 6
+
+        state = state.copy(
+            emailError = if (!isEmailValid) "E-mail no válido" else null,
+            passwordError = if (!isPasswordValid) "La contraseña es demasiado corta" else null
+        )
+
+        return isEmailValid && isPasswordValid
+    }
+
+    private fun fetchUserProfileAndNavigate(uid: String, onSuccess: () -> Unit) {
+        db.collection("users").document(uid).get()
+            .addOnSuccessListener { document ->
+                val profile = document.toObject(UserProfile::class.java)
+                if (profile != null) {
                     viewModelScope.launch {
-                        sessionDataStore.saveSession(it)
+                        sessionDataStore.saveSession(profile)
                         state = state.copy(isLoading = false)
-                        onComplete() // Irá a Home (Login)
+                        onSuccess()
                     }
-                }
-            } else if (isRegister) {
-                val newProfile = UserProfile(email = email, username = state.username)
-                db.collection("users").document(uid).set(newProfile).addOnSuccessListener {
-                    state = state.copy(isLoading = false)
-                    onComplete() // Irá a Welcome (Registro)
+                } else {
+                    state = state.copy(isLoading = false, emailError = "Perfil no encontrado en Gaia")
                 }
             }
-        }
-    }
-
-    fun resetSpiritWhisper() {
-        state = state.copy(isCodeSent = false, isLoading = false)
+            .addOnFailureListener {
+                state = state.copy(isLoading = false, emailError = "Error al conectar con el Códice")
+            }
     }
 }

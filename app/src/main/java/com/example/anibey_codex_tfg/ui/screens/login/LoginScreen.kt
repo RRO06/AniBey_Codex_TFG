@@ -1,6 +1,7 @@
 package com.example.anibey_codex_tfg.ui.login.ui
 
-import androidx.compose.foundation.BorderStroke
+import LoginActions
+import LoginState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,7 +19,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -39,53 +39,41 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.anibey_codex_tfg.R
 import com.example.anibey_codex_tfg.ui.common.component.AnimaTextField
+import com.example.anibey_codex_tfg.ui.common.theme.AniBey_Codex_TFGTheme
 import com.example.anibey_codex_tfg.ui.common.theme.PrimaryRed
-import com.example.anibey_codex_tfg.ui.screens.login.LoginActions
-import com.example.anibey_codex_tfg.ui.screens.login.LoginState
 import com.example.anibey_codex_tfg.ui.screens.login.LoginViewModel
-import com.example.anibey_codex_tfg.ui.screens.login.RegistrationStep
 
 @Composable
 fun LoginScreen(
     viewModel: LoginViewModel,
     onNavigateBack: () -> Unit,
-    onLoginSuccess: () -> Unit, // Se ejecutará tras el link
-    isRegister: Boolean,
+    onLoginSuccess: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val state = viewModel.state
 
+    // Mapeo de acciones para limpiar la UI de lógica
     val actions = LoginActions(
         onEmailChange = viewModel::onEmailChange,
-        onUsernameChange = viewModel::onUsernameChange,
-        onNextStep = {
-            val isFinalStep = if (isRegister) state.currentStep == RegistrationStep.FINALIZING
-            else state.currentStep == RegistrationStep.CREDENTIALS
-            if (isFinalStep) viewModel.onLoginSubmit() else viewModel.onNextStep()
-        },
+        onPasswordChange = viewModel::onPasswordChange,
+        onLoginSubmit = { viewModel.onLoginSubmit(onLoginSuccess) },
+        onToggleRecoveryMode = { viewModel.toggleRecoveryMode(it) },
+        onSendRecoveryEmail = viewModel::sendRecoveryEmail,
         onBackStep = {
-            if (state.isCodeSent) viewModel.resetSpiritWhisper()
-            else if (state.currentStep.ordinal == 0) onNavigateBack()
-            else viewModel.onBackStep()
-        },
-        onLoginSubmit = { viewModel.onLoginSubmit() },
-        onGoogleClick = { /* Google Logic */ },
-        onResetSpiritWhisper = { viewModel.resetSpiritWhisper() }
+            if (state.isRecoveryMode) viewModel.toggleRecoveryMode(false)
+            else onNavigateBack()
+        }
     )
 
-    Box(modifier = modifier.fillMaxSize()) {
-        LoginScreenContent(
-            isRegister = isRegister,
-            state = state,
-            actions = actions,
-            modifier = modifier
-        )
-    }
+    LoginScreenContent(
+        state = state,
+        actions = actions,
+        modifier = modifier
+    )
 }
 
 @Composable
 fun LoginScreenContent(
-    isRegister: Boolean,
     state: LoginState,
     actions: LoginActions,
     modifier: Modifier
@@ -96,7 +84,7 @@ fun LoginScreenContent(
             .paint(
                 painter = painterResource(id = R.drawable.fondo_login),
                 contentScale = ContentScale.Crop,
-                colorFilter = ColorFilter.tint(Color.Black.copy(alpha = 0.15f), BlendMode.Darken)
+                colorFilter = ColorFilter.tint(Color.Black.copy(alpha = 0.20f), BlendMode.Darken)
             )
     ) {
         Column(
@@ -105,96 +93,36 @@ fun LoginScreenContent(
                 .padding(horizontal = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            LoginHeader(step = state.currentStep, isRegister = isRegister)
+            // Cabecera con efecto de brillo
+            LoginHeader(isRecoveryMode = state.isRecoveryMode)
 
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
-                if (state.isCodeSent) {
-                    WhisperWaitView(email = state.email)
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                if (state.isRecoveryMailSent) {
+                    // Vista cuando el correo de recuperación ya se envió
+                    RecoverySuccessView(email = state.email)
                 } else {
-                    LoginStepFields(state = state, actions = actions, isRegister = isRegister)
-                    if (state.currentStep == RegistrationStep.CREDENTIALS) {
-                        GoogleSignInSection(onGoogleClick = actions.onGoogleClick)
-                    }
+                    // Formulario de Login o Recuperación
+                    LoginFieldsSection(state = state, actions = actions)
                 }
             }
 
-            // Botones de Navegación (Solo se ven si no se ha enviado el mail)
-            if (!state.isCodeSent) {
-                LoginNavigationButtons(
-                    currentStep = state.currentStep,
-                    isRegister = isRegister,
-                    actions = actions,
-                    state = state
-                )
-            } else {
-                // Botón para volver si el mail no llega
-                TextButton(
-                    onClick = actions.onBackStep,
-                    modifier = Modifier.padding(bottom = 60.dp)
-                ) {
-                    Text("EL VACÍO NO RESPONDE (REINTENTAR)", color = PrimaryRed)
-                }
-            }
+            // Botones de acción en la parte inferior
+            LoginBottomBar(state = state, actions = actions)
         }
     }
 }
 
 @Composable
-private fun GoogleSignInSection(onGoogleClick: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "— O VINCÚLATE MEDIANTE —",
-            style = MaterialTheme.typography.labelSmall.copy(
-                letterSpacing = 2.sp,
-                color = Color.Black.copy(alpha = 0.3f)
-            )
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Un botón más estilizado, menos "pesado"
-        OutlinedButton(
-            onClick = onGoogleClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
-            shape = RoundedCornerShape(4.dp), // Casi cuadrado, muy Anima
-            border = BorderStroke(0.5.dp, Color.Black.copy(alpha = 0.2f)),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Black)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_google),
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "EL PACTO DEL SOL",
-                    style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.sp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun LoginHeader(step: RegistrationStep, isRegister: Boolean) {
-    val title = when (step) {
-        RegistrationStep.CREDENTIALS -> if (isRegister) "VINCULACIÓN" else "ESENCIA"
-        RegistrationStep.CHARACTER_INFO -> "IDENTIDAD"
-        RegistrationStep.FINALIZING -> "EL PACTO"
-    }
-
+private fun LoginHeader(isRecoveryMode: Boolean) {
     Text(
-        text = title,
+        text = if (isRecoveryMode) "RECUPERACIÓN" else "ESENCIA",
         style = MaterialTheme.typography.displaySmall.copy(
             fontWeight = FontWeight.Black,
-            letterSpacing = 6.sp,
+            letterSpacing = 2.sp,
             shadow = Shadow(color = Color.White.copy(alpha = 0.7f), blurRadius = 12f)
         ),
         color = Color(0xFF1A1A1A),
@@ -203,97 +131,58 @@ private fun LoginHeader(step: RegistrationStep, isRegister: Boolean) {
 }
 
 @Composable
-private fun LoginStepFields(
-    state: LoginState,
-    actions: LoginActions,
-    isRegister: Boolean
-) {
-    if (state.isCodeSent) {
-        WhisperWaitView(email = state.email)
-    } else {
-        when (state.currentStep) {
-            RegistrationStep.CREDENTIALS -> {
-                AnimaTextField(
-                    value = state.email,
-                    onValueChange = actions.onEmailChange,
-                    label = "E-mail de contacto",
-                    errorMessage = state.emailError
+private fun LoginFieldsSection(state: LoginState, actions: LoginActions) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
+    ) {
+        AnimaTextField(
+            value = state.email,
+            onValueChange = actions.onEmailChange,
+            label = "E-mail de contacto",
+            errorMessage = state.emailError
+        )
+
+        if (!state.isRecoveryMode) {
+            // Campo de contraseña solo visible en Login Normal
+            AnimaTextField(
+                value = state.password,
+                onValueChange = actions.onPasswordChange,
+                label = "Contraseña de alma",
+                errorMessage = state.passwordError,
+                isPassword = true // Asegúrate que tu AnimaTextField use PasswordVisualTransformation
+            )
+
+            // Botón sutil para olvidar contraseña
+            TextButton(
+                onClick = { actions.onToggleRecoveryMode(true) },
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Text(
+                    text = "¿HAS PERDIDO TU RUMBO?",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        letterSpacing = 1.sp,
+                        color = PrimaryRed.copy(alpha = 0.8f)
+                    )
                 )
             }
-
-            RegistrationStep.CHARACTER_INFO -> {
-                // Solo debería verse en Registro
-                AnimaTextField(
-                    value = state.username,
-                    onValueChange = actions.onUsernameChange,
-                    label = "Apodo del Viajero",
-                    errorMessage = state.usernameError
-                )
-            }
-
-            RegistrationStep.FINALIZING -> {
-                // Mensaje final personalizado
-                val title = if (isRegister) "SELLAR EL PACTO" else "RECUPERAR ESENCIA"
-                val subtitle = if (isRegister)
-                    "Tu alma será vinculada al Códice de Gaia."
-                else "Tus recuerdos volverán a fluir desde el vacío."
-
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "$subtitle\n¿Deseas lanzar el susurro?",
-                        style = MaterialTheme.typography.bodyLarge.copy(textAlign = TextAlign.Center),
-                        color = Color.Black.copy(alpha = 0.7f)
-                    )
-                }
-            }
+        } else {
+            // Texto explicativo en modo recuperación
+            Text(
+                text = "Escribe tu correo vinculado. Enviaremos un susurro para restaurar tu vínculo con Gaia.",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    textAlign = TextAlign.Center,
+                    fontFamily = FontFamily.Serif
+                ),
+                color = Color.Black.copy(alpha = 0.6f),
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
         }
     }
 }
 
 @Composable
-private fun WhisperWaitView(email: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = "EL SUSURRO HA SIDO ENVIADO",
-            style = MaterialTheme.typography.titleMedium.copy(
-                color = PrimaryRed,
-                letterSpacing = 2.sp
-            ),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "Un lazo místico espera en tu bandeja de entrada ($email).\nPulsa el vínculo para despertar tu esencia.",
-            style = MaterialTheme.typography.bodyLarge.copy(
-                fontFamily = FontFamily.Serif,
-                textAlign = TextAlign.Center
-            ),
-            color = Color.Black.copy(alpha = 0.7f)
-        )
-    }
-}
-
-@Composable
-private fun LoginNavigationButtons(
-    currentStep: RegistrationStep,
-    isRegister: Boolean,
-    state: LoginState,
-    actions: LoginActions
-) {
-    // Determinamos el estado del flujo
-    val isFirstStep = currentStep == RegistrationStep.CREDENTIALS
-    val isLastStep = if (isRegister) {
-        currentStep == RegistrationStep.FINALIZING
-    } else {
-        isFirstStep // En Login, el primer paso es el último
-    }
-
+private fun LoginBottomBar(state: LoginState, actions: LoginActions) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -301,90 +190,81 @@ private fun LoginNavigationButtons(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 1. Botón de retroceso (Desistir o Volver)
-        SecondaryActionButton(
-            isFirstStep = isFirstStep,
-            isLoading = state.isLoading,
-            onClick = actions.onBackStep
-        )
-
-        // 2. Botón de acción principal (Sellar, Despertar o Seguir)
-        PrimaryActionButton(
-            isLastStep = isLastStep,
-            isRegister = isRegister,
-            isLoading = state.isLoading,
-            onClick = if (isLastStep) actions.onLoginSubmit else actions.onNextStep
-        )
-    }
-}
-
-@Composable
-private fun SecondaryActionButton(
-    isFirstStep: Boolean,
-    isLoading: Boolean,
-    onClick: () -> Unit
-) {
-    TextButton(
-        onClick = onClick,
-        enabled = !isLoading
-    ) {
-        Text(
-            text = if (isFirstStep) "DESISTIR" else "VOLVER",
-            color = if (isLoading) Color.Gray else Color.Black.copy(alpha = 0.5f),
-            style = MaterialTheme.typography.labelLarge.copy(
-                letterSpacing = if (isFirstStep) 2.sp else 0.sp
-            )
-        )
-    }
-}
-
-@Composable
-private fun PrimaryActionButton(
-    isLastStep: Boolean,
-    isRegister: Boolean,
-    isLoading: Boolean,
-    onClick: () -> Unit
-) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier
-            .height(50.dp)
-            .width(160.dp),
-        enabled = !isLoading,
-        shape = RoundedCornerShape(2.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = PrimaryRed,
-            disabledContainerColor = PrimaryRed.copy(alpha = 0.5f)
-        ),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
-    ) {
-        if (isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(24.dp),
-                color = Color.White,
-                strokeWidth = 2.dp
-            )
-        } else {
-            val buttonText = when {
-                isRegister && isLastStep -> "SELLAR"
-                !isRegister -> "DESPERTAR"
-                else -> "SEGUIR"
-            }
+        // Botón Secundario (Desistir o Volver)
+        TextButton(
+            onClick = actions.onBackStep,
+            enabled = !state.isLoading
+        ) {
             Text(
-                text = buttonText,
-                style = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp)
+                text = if (state.isRecoveryMode) "CANCELAR" else "DESISTIR",
+                color = Color.Black.copy(alpha = 0.5f),
+                style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 2.sp)
             )
         }
+
+        // Botón Principal (Login o Enviar Mail)
+        Button(
+            onClick = {
+                if (state.isRecoveryMode) actions.onSendRecoveryEmail()
+                else actions.onLoginSubmit()
+            },
+            modifier = Modifier
+                .height(50.dp)
+                .width(160.dp),
+            enabled = !state.isLoading && !state.isRecoveryMailSent,
+            shape = RoundedCornerShape(2.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = PrimaryRed,
+                disabledContainerColor = PrimaryRed.copy(alpha = 0.5f)
+            ),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+        ) {
+            if (state.isLoading) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
+            } else {
+                Text(
+                    text = if (state.isRecoveryMode) "SUSURRAR" else "DESPERTAR",
+                    style = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecoverySuccessView(email: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(
+            painter = painterResource(id = R.drawable.ic_google), // Usa un icono de un sobre o magia
+            contentDescription = null,
+            tint = PrimaryRed,
+            modifier = Modifier.size(48.dp)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "EL LAZO HA SIDO ENVIADO",
+            style = MaterialTheme.typography.titleMedium.copy(color = PrimaryRed, letterSpacing = 2.sp),
+            textAlign = TextAlign.Center
+        )
+        Text(
+            text = "Revisa tu bandeja en $email para restaurar tu esencia.",
+            style = MaterialTheme.typography.bodyLarge.copy(textAlign = TextAlign.Center),
+            color = Color.Black.copy(alpha = 0.7f),
+            modifier = Modifier.padding(top = 8.dp)
+        )
     }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenContentPreview() {
-    LoginScreenContent(
-        isRegister = true,
-        state = LoginState(),
-        actions = LoginActions(),
-        Modifier
-    )
+    AniBey_Codex_TFGTheme {
+        LoginScreenContent(
+            state = LoginState(
+                isRecoveryMode = true
+            ),
+            actions = LoginActions(),
+            Modifier
+        )
+    }
 }
