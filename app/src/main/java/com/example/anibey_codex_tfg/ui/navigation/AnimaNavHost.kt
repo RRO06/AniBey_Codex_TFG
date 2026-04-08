@@ -1,6 +1,5 @@
 package com.example.anibey_codex_tfg.ui.navigation
 
-import android.app.Activity
 import androidx.compose.animation.core.EaseInOutQuart
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -8,46 +7,21 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
 import com.example.anibey_codex_tfg.ui.login.ui.LoginScreen
 import com.example.anibey_codex_tfg.ui.screens.home.HomeScreen
-import com.example.anibey_codex_tfg.ui.screens.login.LoginViewModel
+import com.example.anibey_codex_tfg.ui.screens.register.RegisterScreen
 import com.example.anibey_codex_tfg.ui.welcome.ui.WelcomeScreen
 
 @Composable
 fun AnimaNavHost(
-    modifier : Modifier,
-    viewModel: LoginViewModel = hiltViewModel()
+    modifier : Modifier
 ) {
     val navController = rememberNavController()
-    val context = LocalContext.current
-
-    LaunchedEffect(Unit) {
-        val activity = context as? Activity
-        val intent = activity?.intent
-        val emailLink = intent?.data?.toString()
-
-        if (emailLink != null && viewModel.auth.isSignInWithEmailLink(emailLink)) {
-            val currentlyRegistering = viewModel.state.isRegistering
-
-            viewModel.completeSpiritLink(emailLink, isRegister = currentlyRegistering) {
-                if (currentlyRegistering) {
-                    navController.navigate(Screen.Welcome) { popUpTo(0) }
-                } else {
-                    navController.navigate(Screen.Home) {
-                        popUpTo(Screen.Welcome) { inclusive = true }
-                    }
-                }
-            }
-        }
-    }
 
     NavHost(
         navController = navController,
@@ -81,23 +55,35 @@ fun AnimaNavHost(
         // RUTA: WELCOME
         composable<Screen.Welcome> {
             WelcomeScreen(
-                onLoginSelected = { navController.navigate(Screen.Login(isRegister = false)) },
+                onLoginSelected = { navController.navigate(Screen.Login) },
                 onGuestSelected = { /* Próximamente: Screen.Home */ },
-                onRegisterSelected = { navController.navigate(Screen.Login(isRegister = true)) },
+                onRegisterSelected = { navController.navigate(Screen.Register) },
                 modifier = modifier
             )
         }
 
         // RUTA: LOGIN
-        composable<Screen.Login> { backStackEntry ->
-            val args = backStackEntry.toRoute<Screen.Login>()
-            val loginViewModel: LoginViewModel = hiltViewModel()
+        composable<Screen.Login> {
             LoginScreen(
-                isRegister = args.isRegister,
-                viewModel = loginViewModel,
+                viewModel = hiltViewModel(),
                 onNavigateBack = { navController.popBackStack() },
                 onLoginSuccess = {
-                    // Aquí navegarías a la pantalla principal tras el "Pacto"
+                    // Aquí navegarías a la pantalla principal
+                },
+                modifier = modifier
+            )
+        }
+        composable<Screen.Register> {
+            RegisterScreen(
+                viewModel = hiltViewModel(),
+                onNavigateBack = { navController.popBackStack() },
+                onRegisterSuccess = {
+                    navController.navigate(Screen.Welcome){
+                        popUpTo<Screen.Welcome> {
+                            inclusive = true
+                        }
+                        launchSingleTop = true
+                    }
                 },
                 modifier = modifier
             )
