@@ -18,10 +18,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.anibey_codex_tfg.ui.common.theme.PrimaryRed
-import com.example.anibey_codex_tfg.ui.screens.login.RegistrationStep
+import com.example.anibey_codex_tfg.ui.screens.register.RegisterStep
 
 @Composable
-fun RegistrationProgressBar(currentStep: RegistrationStep) {
+fun RegistrationProgressBar(currentStep: RegisterStep) {
     Row (
         modifier = Modifier
             .padding(vertical = 32.dp)
@@ -29,7 +29,7 @@ fun RegistrationProgressBar(currentStep: RegistrationStep) {
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        RegistrationStep.entries.forEach { step ->
+        RegisterStep.entries.forEach { step ->
             val isActive = step.ordinal <= currentStep.ordinal
             Box(
                 modifier = Modifier
@@ -39,7 +39,7 @@ fun RegistrationProgressBar(currentStep: RegistrationStep) {
                         shape = RoundedCornerShape(50)
                     )
             )
-            if (step != RegistrationStep.FINALIZING) {
+            if (step != RegisterStep.FINALIZE_PACT) {
                 Spacer(
                     modifier = Modifier
                         .width(40.dp)
@@ -55,6 +55,6 @@ fun RegistrationProgressBar(currentStep: RegistrationStep) {
 @Composable
 fun RegistrationProgressBarPreview(){
     RegistrationProgressBar(
-        currentStep = RegistrationStep.CREDENTIALS
+        currentStep = RegisterStep.EMAIL_ENTRY
     )
 }
