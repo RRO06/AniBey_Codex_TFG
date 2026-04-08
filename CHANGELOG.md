@@ -6,6 +6,19 @@ El formato sigue las recomendaciones de Keep a Changelog
 y el versionado utiliza Semantic Versioning.
 
 ---
+## [0.0.4] - 2026-04-08
+
+### Añadido
+- Screen propias para Login y Register
+- Screen de esqueleto para la screen Home
+
+### Modificado
+- Estetica del login y register
+- Vuelvo a poner que se pueda poner contraseña
+
+### Corregido
+- Ya se recibe el correo de verificación
+- El registro te manda a Welcome
 
 ## [0.0.3] - 2026-04-07
 
