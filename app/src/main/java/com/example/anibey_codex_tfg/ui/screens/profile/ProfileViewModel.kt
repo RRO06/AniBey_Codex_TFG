@@ -46,45 +46,54 @@ class ProfileViewModel @Inject constructor(
                     )
                 }
             } catch (e: Exception) {
-                // Handle error
+                state = state.copy(generalError = "Error al cargar perfil: ${e.localizedMessage}")
             }
         }
     }
 
     fun onUsernameChange(newValue: String) {
-        state = state.copy(username = newValue, usernameError = null)
+        state = state.copy(username = newValue, usernameError = null, generalError = null)
     }
 
     fun onEmailChange(newValue: String) {
-        state = state.copy(email = newValue, emailError = null)
+        state = state.copy(email = newValue, emailError = null, generalError = null)
     }
 
     fun onPasswordChange(newValue: String) {
-        state = state.copy(password = newValue, passwordError = null)
+        state = state.copy(password = newValue, passwordError = null, generalError = null)
     }
 
     fun onCurrentPasswordChange(newValue: String) {
-        state = state.copy(currentPassword = newValue, currentPasswordError = null)
+        state = state.copy(currentPassword = newValue, currentPasswordError = null, generalError = null)
     }
 
     fun onPhotoChange(newValue: String?) {
-        state = state.copy(photoUrl = newValue)
+        state = state.copy(photoUrl = newValue, generalError = null)
     }
 
     fun uploadPhoto(imageUri: Uri) {
         val user = auth.currentUser ?: return
-        val photoRef = storage.reference.child("users/${user.uid}/profile.jpg")
+        // Aseguramos que la ruta sea correcta y el archivo tenga extensión
+        val photoRef = storage.reference.child("profiles/${user.uid}.jpg")
 
         viewModelScope.launch {
             try {
-                state = state.copy(isLoading = true)
+                state = state.copy(isLoading = true, generalError = null)
+                
+                // Subir archivo
                 photoRef.putFile(imageUri).await()
+                
+                // Obtener URL de descarga
                 val downloadUrl = photoRef.downloadUrl.await()
-                state = state.copy(photoUrl = downloadUrl.toString(), isLoading = false)
+                
+                state = state.copy(
+                    photoUrl = downloadUrl.toString(), 
+                    isLoading = false
+                )
             } catch (e: Exception) {
                 state = state.copy(
                     isLoading = false,
-                    emailError = "Error al subir imagen: ${e.localizedMessage}"
+                    generalError = "Error en Storage: ${e.localizedMessage}"
                 )
             }
         }
@@ -96,19 +105,19 @@ class ProfileViewModel @Inject constructor(
             return
         }
 
-        state = state.copy(isLoading = true)
+        state = state.copy(isLoading = true, generalError = null)
 
         viewModelScope.launch {
             try {
-                val user = auth.currentUser ?: return@launch
+                val user = auth.currentUser ?: throw Exception("Usuario no autenticado")
 
-                // Reauthenticate if email or password is changing
+                // Reautenticación para cambios críticos
                 val needsReauth = state.email != user.email || state.password.isNotBlank()
                 if (needsReauth) {
                     if (state.currentPassword.isBlank()) {
                         state = state.copy(
                             isLoading = false,
-                            currentPasswordError = "Contraseña actual requerida para cambios sensibles"
+                            currentPasswordError = "Introduce tu contraseña actual para confirmar cambios"
                         )
                         return@launch
                     }
@@ -116,17 +125,17 @@ class ProfileViewModel @Inject constructor(
                     user.reauthenticate(credential).await()
                 }
 
-                // Update email if changed
+                // Actualizar Email
                 if (state.email != user.email) {
                     user.updateEmail(state.email).await()
                 }
 
-                // Update password if provided
+                // Actualizar Password
                 if (state.password.isNotBlank()) {
                     user.updatePassword(state.password).await()
                 }
 
-                // Update Firestore
+                // Actualizar Firestore
                 val profile = UserProfile(
                     email = state.email,
                     username = state.username,
@@ -134,14 +143,19 @@ class ProfileViewModel @Inject constructor(
                 )
                 db.collection("users").document(user.uid).set(profile).await()
 
-                // Update session
+                // Sincronizar DataStore local
                 sessionDataStore.saveSession(profile)
 
-                state = state.copy(isLoading = false, updateSuccess = true)
+                state = state.copy(
+                    isLoading = false, 
+                    updateSuccess = true, 
+                    currentPassword = "",
+                    password = ""
+                )
             } catch (e: Exception) {
                 state = state.copy(
                     isLoading = false,
-                    emailError = "Error al actualizar: ${e.localizedMessage}"
+                    generalError = "Error al guardar: ${e.localizedMessage}"
                 )
             }
         }

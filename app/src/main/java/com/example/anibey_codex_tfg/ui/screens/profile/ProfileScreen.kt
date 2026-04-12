@@ -2,7 +2,6 @@ package com.example.anibey_codex_tfg.ui.screens.profile
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,8 +34,10 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.anibey_codex_tfg.R
 import com.example.anibey_codex_tfg.ui.common.component.AnimaTextField
 import com.example.anibey_codex_tfg.ui.common.theme.AniBey_Codex_TFGTheme
@@ -117,7 +118,26 @@ fun ProfileContent(
                 )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Error General Mensaje
+            state.generalError?.let { error ->
+                Text(
+                    text = error,
+                    color = PrimaryRed,
+                    style = MaterialTheme.typography.labelSmall.copy(textAlign = TextAlign.Center),
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+            }
+            
+            if (state.updateSuccess) {
+                Text(
+                    text = "Perfil actualizado con éxito",
+                    color = Color.Green,
+                    style = MaterialTheme.typography.labelSmall.copy(textAlign = TextAlign.Center),
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+            }
 
             // Profile Picture
             ProfilePhotoSelector(
@@ -155,7 +175,7 @@ fun ProfileContent(
                 AnimaTextField(
                     value = state.currentPassword,
                     onValueChange = actions.onCurrentPasswordChange,
-                    label = "Contraseña Actual (para cambios sensibles)",
+                    label = "Contraseña Actual (para cambios críticos)",
                     isPassword = true,
                     errorMessage = state.currentPasswordError
                 )

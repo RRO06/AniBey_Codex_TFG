@@ -36,6 +36,7 @@ fun ProfilePhotoSelector(
             contentAlignment = Alignment.Center
         ) {
             Image(
+                // Muestra avatar por defecto como placeholder y si no hay URL
                 painter = rememberAsyncImagePainter(
                     model = photoUrl ?: R.drawable.default_avatar,
                     placeholder = painterResource(R.drawable.default_avatar)

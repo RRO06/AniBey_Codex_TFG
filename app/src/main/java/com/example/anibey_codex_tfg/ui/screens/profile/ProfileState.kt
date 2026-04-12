@@ -12,6 +12,7 @@ data class ProfileState(
     val emailError: String? = null,
     val passwordError: String? = null,
     val currentPasswordError: String? = null,
+    val generalError: String? = null,
     val isLoading: Boolean = false,
     val updateSuccess: Boolean = false
 )
