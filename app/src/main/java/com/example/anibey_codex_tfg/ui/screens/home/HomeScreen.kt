@@ -1,5 +1,7 @@
 package com.example.anibey_codex_tfg.ui.screens.home
 
+import android.graphics.BitmapFactory
+import android.util.Base64
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -111,7 +113,6 @@ fun HomeScreen(
             }
         ) { padding ->
             MainBackgroundWrapper(padding) {
-                // LÓGICA DE INTERFAZ: Si es invitado o no hay perfil, mostrar Guest UI
                 if (isGuest || userProfile == null) {
                     GuestHomeContent(onNavigateToLogin, onNavigateToRegister)
                 } else {
@@ -164,7 +165,6 @@ fun HomeDrawerContent(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Solo mostramos Logout si no es invitado (o puedes poner "Salir del modo invitado")
             DrawerItem(
                 label = if (isGuest) "VOLVER AL INICIO" else "DESVANECER (LOGOUT)",
                 icon = Icons.AutoMirrored.Filled.ExitToApp,
@@ -319,8 +319,20 @@ private fun AuthenticatedHomeContent(
     onNavigateToProfile: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    val imageModel = remember(userProfile?.photoUrl) {
-        if (userProfile?.photoUrl.isNullOrEmpty()) R.drawable.default_avatar else userProfile.photoUrl
+    
+    // LÓGICA INTELIGENTE: Decodificar Base64 si no es una URL
+    val imageData = remember(userProfile?.photoUrl) {
+        val url = userProfile?.photoUrl
+        if (url != null && !url.startsWith("http")) {
+            try {
+                val decodedString = Base64.decode(url, Base64.DEFAULT)
+                BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
+            } catch (e: Exception) {
+                null
+            }
+        } else {
+            url // Es URL de internet o null
+        }
     }
 
     Column(
@@ -348,7 +360,7 @@ private fun AuthenticatedHomeContent(
 
             Image(
                 painter = rememberAsyncImagePainter(
-                    model = imageModel,
+                    model = imageData ?: R.drawable.default_avatar,
                     placeholder = painterResource(R.drawable.default_avatar),
                     error = painterResource(R.drawable.default_avatar)
                 ),

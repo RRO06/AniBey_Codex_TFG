@@ -1,5 +1,6 @@
 package com.example.anibey_codex_tfg.ui.screens.profile
 
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -23,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,12 +38,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.anibey_codex_tfg.R
 import com.example.anibey_codex_tfg.ui.common.component.AnimaTextField
-import com.example.anibey_codex_tfg.ui.common.theme.AniBey_Codex_TFGTheme
 import com.example.anibey_codex_tfg.ui.common.theme.PrimaryRed
 
 @Composable
@@ -50,6 +51,12 @@ fun ProfileScreen(
     modifier: Modifier = Modifier
 ) {
     val state = viewModel.state
+    
+    // Capturamos el botón "Atrás" físico del móvil
+    BackHandler {
+        viewModel.onBackRequested(onNavigateBack)
+    }
+
     val actions = ProfileActions(
         onUsernameChange = viewModel::onUsernameChange,
         onEmailChange = viewModel::onEmailChange,
@@ -57,8 +64,13 @@ fun ProfileScreen(
         onCurrentPasswordChange = viewModel::onCurrentPasswordChange,
         onPhotoChange = viewModel::onPhotoChange,
         onSave = viewModel::saveProfile,
-        onBack = onNavigateBack,
-        uploadPhoto = viewModel::uploadPhoto
+        onBack = { viewModel.onBackRequested(onNavigateBack) },
+        uploadPhoto = viewModel::uploadPhoto,
+        onDismissDiscardDialog = viewModel::onDismissDiscardDialog,
+        onConfirmDiscard = {
+            viewModel.onDismissDiscardDialog()
+            onNavigateBack()
+        }
     )
 
     ProfileContent(state = state, actions = actions, modifier = modifier)
@@ -76,6 +88,28 @@ fun ProfileContent(
         if (uri != null) {
             actions.uploadPhoto(uri)
         }
+    }
+
+    // DIÁLOGO DE CONFIRMACIÓN
+    if (state.isDiscardDialogOpen) {
+        AlertDialog(
+            onDismissRequest = actions.onDismissDiscardDialog,
+            title = { Text("¿DESCARTAR CAMBIOS?") },
+            text = { Text("Tu esencia ha mutado pero no ha sido sellada. Si te retiras ahora, los cambios se desvanecerán en el vacío.") },
+            confirmButton = {
+                TextButton(onClick = actions.onConfirmDiscard) {
+                    Text("DESCARTAR", color = PrimaryRed)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = actions.onDismissDiscardDialog) {
+                    Text("CANCELAR", color = Color.Gray)
+                }
+            },
+            containerColor = Color.DarkGray,
+            titleContentColor = Color.White,
+            textContentColor = Color.LightGray
+        )
     }
 
     Box(
@@ -202,17 +236,5 @@ fun ProfileContent(
 
             Spacer(modifier = Modifier.height(60.dp))
         }
-    }
-}
-
-@Preview(showSystemUi = true)
-@Composable
-fun ProfilePreview() {
-    AniBey_Codex_TFGTheme {
-        ProfileContent(
-            state = ProfileState(username = "Viajero", email = "test@example.com"),
-            actions = ProfileActions(),
-            modifier = Modifier
-        )
     }
 }
