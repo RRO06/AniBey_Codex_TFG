@@ -20,13 +20,14 @@ import com.example.anibey_codex_tfg.ui.welcome.ui.WelcomeScreen
 
 @Composable
 fun AnimaNavHost(
-    modifier : Modifier
+    modifier : Modifier,
+    startDestination: Screen = Screen.Welcome
 ) {
     val navController = rememberNavController()
 
     NavHost(
         navController = navController,
-        startDestination = Screen.Welcome,
+        startDestination = startDestination,
         enterTransition = {
             slideInHorizontally(
                 initialOffsetX = { it },
@@ -56,8 +57,10 @@ fun AnimaNavHost(
             WelcomeScreen(
                 onLoginSelected = { navController.navigate(Screen.Login) },
                 onGuestSelected = { 
+                    // MODO INVITADO: NO hacemos popUpTo inclusivo. 
+                    // Así la WelcomeScreen se queda debajo y se puede volver atrás.
                     navController.navigate(Screen.Home) {
-                        popUpTo<Screen.Welcome> { inclusive = true }
+                        launchSingleTop = true
                     }
                 },
                 onRegisterSelected = { navController.navigate(Screen.Register) },
@@ -70,8 +73,10 @@ fun AnimaNavHost(
                 viewModel = hiltViewModel(),
                 onNavigateBack = { navController.popBackStack() },
                 onLoginSuccess = {
+                    // INICIO SESIÓN: SÍ hacemos popUpTo para limpiar la pila.
+                    // No se puede volver atrás a Welcome ni Login.
                     navController.navigate(Screen.Home) {
-                        popUpTo<Screen.Welcome> { inclusive = true }
+                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
                         launchSingleTop = true
                     }
                 },
@@ -84,8 +89,9 @@ fun AnimaNavHost(
                 viewModel = hiltViewModel(),
                 onNavigateBack = { navController.popBackStack() },
                 onRegisterSuccess = {
+                    // REGISTRO EXITOSO: También limpiamos la pila.
                     navController.navigate(Screen.Home) {
-                        popUpTo<Screen.Welcome> { inclusive = true }
+                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
                         launchSingleTop = true
                     }
                 },
@@ -101,7 +107,7 @@ fun AnimaNavHost(
                 onNavigateToRegister = { navController.navigate(Screen.Register) },
                 onLogout = {
                     navController.navigate(Screen.Welcome) {
-                        popUpTo<Screen.Home> { inclusive = true }
+                        popUpTo(Screen.Home) { inclusive = true }
                         launchSingleTop = true
                     }
                 }

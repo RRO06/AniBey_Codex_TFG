@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
-private val Context.dataStore by preferencesDataStore(name = "user_session")
+private val Context.dataStore by preferencesDataStore(name = "user_session_v3")
 
 class SessionDataStore @Inject constructor(
     @ApplicationContext private val context: Context
@@ -23,15 +23,27 @@ class SessionDataStore @Inject constructor(
         val IS_GUEST = booleanPreferencesKey("is_guest")
     }
     val userData: Flow<UserProfile?> = context.dataStore.data.map { prefs ->
-        UserProfile(
-            email = prefs[USER_EMAIL] ?: "",
-            username = prefs[USER_NAME] ?: "Viajero",
-            photoUrl = prefs[USER_PHOTO_URL]
-        )
+        val email = prefs[USER_EMAIL] ?: ""
+        val username = prefs[USER_NAME] ?: "Viajero"
+        val photoUrl = prefs[USER_PHOTO_URL]
+        val isGuestFlag = prefs[IS_GUEST] ?: false
+        android.util.Log.d("SessionDataStore", "DataStore values - email: '$email', username: '$username', photoUrl: '$photoUrl', isGuest: $isGuestFlag")
+        if (email.isNotEmpty()) {
+            UserProfile(
+                email = email,
+                username = username,
+                photoUrl = photoUrl
+            )
+        } else {
+            android.util.Log.d("SessionDataStore", "userData returning null")
+            null
+        }
     }
 
     val isGuest: Flow<Boolean> = context.dataStore.data.map { prefs ->
-        prefs[IS_GUEST] ?: false
+        val isGuestFlag = prefs[IS_GUEST] ?: false
+        android.util.Log.d("SessionDataStore", "isGuest returning: $isGuestFlag")
+        isGuestFlag
     }
 
     suspend fun saveSession(user: UserProfile) {
@@ -46,6 +58,12 @@ class SessionDataStore @Inject constructor(
     suspend fun setGuestMode() {
         context.dataStore.edit { prefs ->
             prefs[IS_GUEST] = true
+        }
+    }
+
+    suspend fun clearGuestMode() {
+        context.dataStore.edit { prefs ->
+            prefs[IS_GUEST] = false
         }
     }
 

@@ -23,7 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Create
-import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
@@ -75,7 +74,6 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.anibey_codex_tfg.R
 import com.example.anibey_codex_tfg.ui.common.theme.PrimaryRed
 import com.example.anibey_codex_tfg.ui.common.theme.SoftGray
-import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -95,14 +93,13 @@ fun HomeScreen(
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            // MODULARIZADO: Contenido del Drawer
             HomeDrawerContent(
                 isGuest = isGuest,
                 onNavigateToProfile = onNavigateToProfile,
                 onNavigateToLogin = onNavigateToLogin,
                 onNavigateToRegister = onNavigateToRegister,
                 onLogout = {
-                    onLogout()
+                    viewModel.logout { onLogout() }
                 },
                 closeDrawer = { scope.launch { drawerState.close() } }
             )
@@ -110,13 +107,12 @@ fun HomeScreen(
     ) {
         Scaffold(
             topBar = {
-                // MODULARIZADO: Barra superior
                 HomeTopBar(onMenuClick = { scope.launch { drawerState.open() } })
             }
         ) { padding ->
-            // MODULARIZADO: Fondo y contenido central
             MainBackgroundWrapper(padding) {
-                if (isGuest) {
+                // LÓGICA DE INTERFAZ: Si es invitado o no hay perfil, mostrar Guest UI
+                if (isGuest || userProfile == null) {
                     GuestHomeContent(onNavigateToLogin, onNavigateToRegister)
                 } else {
                     AuthenticatedHomeContent(userProfile, onNavigateToProfile)
@@ -168,17 +164,16 @@ fun HomeDrawerContent(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            if (!isGuest) {
-                DrawerItem(
-                    label = "DESVANECER (LOGOUT)",
-                    icon = Icons.AutoMirrored.Filled.ExitToApp,
-                    color = PrimaryRed,
-                    onClick = {
-                        closeDrawer()
-                        onLogout()
-                    }
-                )
-            }
+            // Solo mostramos Logout si no es invitado (o puedes poner "Salir del modo invitado")
+            DrawerItem(
+                label = if (isGuest) "VOLVER AL INICIO" else "DESVANECER (LOGOUT)",
+                icon = Icons.AutoMirrored.Filled.ExitToApp,
+                color = PrimaryRed,
+                onClick = {
+                    closeDrawer()
+                    onLogout()
+                }
+            )
         }
     }
 }
@@ -324,7 +319,6 @@ private fun AuthenticatedHomeContent(
     onNavigateToProfile: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    // Aseguramos que cargue el avatar por defecto si no hay URL
     val imageModel = remember(userProfile?.photoUrl) {
         if (userProfile?.photoUrl.isNullOrEmpty()) R.drawable.default_avatar else userProfile.photoUrl
     }
@@ -335,7 +329,6 @@ private fun AuthenticatedHomeContent(
         modifier = Modifier.fillMaxSize()
     ) {
         Box(contentAlignment = Alignment.Center) {
-            // Aura de fondo
             Box(
                 modifier = Modifier
                     .size(170.dp)
