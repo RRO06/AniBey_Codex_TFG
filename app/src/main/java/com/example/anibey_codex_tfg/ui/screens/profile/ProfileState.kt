@@ -7,7 +7,7 @@ data class ProfileState(
     val email: String = "",
     val password: String = "",
     val currentPassword: String = "",
-    val photoUrl: String? = null, // URL o Base64 actual (mostrada en UI)
+    val photoUrl: String? = null,
     val usernameError: String? = null,
     val emailError: String? = null,
     val passwordError: String? = null,
@@ -15,7 +15,10 @@ data class ProfileState(
     val generalError: String? = null,
     val isLoading: Boolean = false,
     val updateSuccess: Boolean = false,
-    val isDiscardDialogOpen: Boolean = false // Control del diálogo de confirmación
+    val isDiscardDialogOpen: Boolean = false,
+    val showEmailVerificationDialog: Boolean = false,
+    val emailVerificationCountdown: Int = 0,
+    val isCheckingEmailVerification: Boolean = false
 )
 
 data class ProfileActions(
@@ -28,5 +31,7 @@ data class ProfileActions(
     val onBack: () -> Unit = {},
     val uploadPhoto: (Uri) -> Unit = {},
     val onDismissDiscardDialog: () -> Unit = {},
-    val onConfirmDiscard: () -> Unit = {}
+    val onConfirmDiscard: () -> Unit = {},
+    val onDismissVerificationDialog: () -> Unit = {},
+    val onConfirmVerification: () -> Unit = {}
 )

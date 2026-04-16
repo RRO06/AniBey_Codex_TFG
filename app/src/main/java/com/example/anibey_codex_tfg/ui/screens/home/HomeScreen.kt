@@ -2,6 +2,7 @@ package com.example.anibey_codex_tfg.ui.screens.home
 
 import android.graphics.BitmapFactory
 import android.util.Base64
+import android.util.Log
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -50,6 +51,7 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -91,6 +93,15 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     val userProfile by viewModel.userProfile.collectAsState(initial = null)
     val isGuest by viewModel.isGuest.collectAsState(initial = false)
+    val forceLogout by viewModel.forceLogout.collectAsState()
+
+    // Detectar logout forzado y redirigir
+    LaunchedEffect(forceLogout) {
+        if (forceLogout) {
+            Log.d("HomeScreen", "Logout forzado detectado por cambio de email en otro dispositivo")
+            onLogout()
+        }
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,

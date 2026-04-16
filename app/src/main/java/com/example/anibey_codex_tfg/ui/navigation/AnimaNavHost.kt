@@ -57,8 +57,6 @@ fun AnimaNavHost(
             WelcomeScreen(
                 onLoginSelected = { navController.navigate(Screen.Login) },
                 onGuestSelected = { 
-                    // MODO INVITADO: NO hacemos popUpTo inclusivo. 
-                    // Así la WelcomeScreen se queda debajo y se puede volver atrás.
                     navController.navigate(Screen.Home) {
                         launchSingleTop = true
                     }
@@ -73,8 +71,6 @@ fun AnimaNavHost(
                 viewModel = hiltViewModel(),
                 onNavigateBack = { navController.popBackStack() },
                 onLoginSuccess = {
-                    // INICIO SESIÓN: SÍ hacemos popUpTo para limpiar la pila.
-                    // No se puede volver atrás a Welcome ni Login.
                     navController.navigate(Screen.Home) {
                         popUpTo(navController.graph.startDestinationId) { inclusive = true }
                         launchSingleTop = true
@@ -89,7 +85,6 @@ fun AnimaNavHost(
                 viewModel = hiltViewModel(),
                 onNavigateBack = { navController.popBackStack() },
                 onRegisterSuccess = {
-                    // REGISTRO EXITOSO: También limpiamos la pila.
                     navController.navigate(Screen.Home) {
                         popUpTo(navController.graph.startDestinationId) { inclusive = true }
                         launchSingleTop = true
@@ -117,7 +112,13 @@ fun AnimaNavHost(
         composable<Screen.Profile> {
             ProfileScreen(
                 viewModel = hiltViewModel(),
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onLogout = {
+                    navController.navigate(Screen.Welcome) {
+                        popUpTo(0) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
     }
