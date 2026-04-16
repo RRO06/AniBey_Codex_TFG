@@ -12,11 +12,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.example.anibey_codex_tfg.ui.login.ui.LoginScreen
 import com.example.anibey_codex_tfg.ui.screens.home.HomeScreen
 import com.example.anibey_codex_tfg.ui.screens.profile.ProfileScreen
 import com.example.anibey_codex_tfg.ui.screens.register.RegisterScreen
 import com.example.anibey_codex_tfg.ui.screens.lugares.LugaresScreen
+import com.example.anibey_codex_tfg.ui.screens.lugares.lugares_detail.LugarDetailScreen
 import com.example.anibey_codex_tfg.ui.welcome.ui.WelcomeScreen
 
 @Composable
@@ -126,6 +128,16 @@ fun AnimaNavHost(
 
         composable<Screen.Lugares> {
             LugaresScreen(
+                viewModel = hiltViewModel(),
+                onBackClick = { navController.popBackStack() },
+                onLugarClick = { id -> navController.navigate(Screen.LugarDetail(id)) }
+            )
+        }
+
+        composable<Screen.LugarDetail> { backStackEntry ->
+            val detail = backStackEntry.toRoute<Screen.LugarDetail>()
+            LugarDetailScreen(
+                lugarId = detail.lugarId,
                 viewModel = hiltViewModel(),
                 onBackClick = { navController.popBackStack() }
             )
