@@ -12,9 +12,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// Estados posibles de la pantalla de Lugares
-
-
 @HiltViewModel
 class LugaresViewModel @Inject constructor(
     private val db: FirebaseFirestore
@@ -37,11 +34,16 @@ class LugaresViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = LugaresStates.Loading
             try {
-                db.collection("lugares")
+                db.collection("lugar")
                     .get()
                     .addOnSuccessListener { documents ->
                         val lugares = documents.mapNotNull { doc ->
                             try {
+                                @Suppress("UNCHECKED_CAST")
+                                val personajesList = doc.get("personajes") as? List<String> ?: emptyList()
+                                @Suppress("UNCHECKED_CAST")
+                                val monstruosList = doc.get("monstruos") as? List<String> ?: emptyList()
+
                                 Lugar(
                                     id = doc.id,
                                     nombre = doc.getString("nombre") ?: "",
@@ -49,30 +51,21 @@ class LugaresViewModel @Inject constructor(
                                     tipo = doc.getString("tipo") ?: "",
                                     region = doc.getString("region") ?: "",
                                     imagenURL = doc.getString("imagenURL") ?: "",
-                                    personajes = doc.get("personajes") as? List<String> ?: emptyList(),
-                                    monstruos = doc.get("monstruos") as? List<String> ?: emptyList()
+                                    personajes = personajesList,
+                                    monstruos = monstruosList
                                 )
                             } catch (e: Exception) {
-                                Log.e("LugaresViewModel", "Error mapeando lugar: ${e.message}")
                                 null
                             }
                         }
                         allLugares = lugares
-                        _uiState.value = if (lugares.isEmpty()) {
-                            LugaresStates.Empty
-                        } else {
-                            LugaresStates.Success(lugares)
-                        }
+                        _uiState.value = if (lugares.isEmpty()) LugaresStates.Empty else LugaresStates.Success(lugares)
                     }
                     .addOnFailureListener { exception ->
-                        _uiState.value = LugaresStates.Error(
-                            "Error al cargar lugares: ${exception.message}"
-                        )
-                        Log.e("LugaresViewModel", "Error cargando lugares", exception)
+                        _uiState.value = LugaresStates.Error("Error al cargar lugares: ${exception.message}")
                     }
             } catch (e: Exception) {
                 _uiState.value = LugaresStates.Error(e.message ?: "Error desconocido")
-                Log.e("LugaresViewModel", "Excepción al cargar lugares", e)
             }
         }
     }
@@ -82,15 +75,13 @@ class LugaresViewModel @Inject constructor(
     }
 
     fun getLugaresFiltrados(): List<Lugar> {
-        val query = _searchQuery.value.lowercase()
+        val query = _searchQuery.value.lowercase().trim()
         return if (query.isEmpty()) {
             allLugares
         } else {
+            // Filtrar SOLO por nombre como has pedido
             allLugares.filter { lugar ->
-                lugar.nombre.lowercase().contains(query) ||
-                lugar.descripcion.lowercase().contains(query) ||
-                lugar.tipo.lowercase().contains(query) ||
-                lugar.region.lowercase().contains(query)
+                lugar.nombre.lowercase().contains(query)
             }
         }
     }
@@ -99,4 +90,3 @@ class LugaresViewModel @Inject constructor(
         cargarLugares()
     }
 }
-

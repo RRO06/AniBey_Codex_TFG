@@ -38,7 +38,8 @@ import com.example.anibey_codex_tfg.ui.common.component.LoadingScreen
 @Composable
 fun LugaresScreen(
     viewModel: LugaresViewModel = hiltViewModel(),
-    onBackClick: () -> Unit = {}
+    onBackClick: () -> Unit = {},
+    onLugarClick: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
@@ -54,6 +55,7 @@ fun LugaresScreen(
             onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
             onReload = viewModel::recargarLugares,
             getLugaresFiltrados = viewModel::getLugaresFiltrados,
+            onLugarClick = onLugarClick,
             padding = padding
         )
     }
@@ -66,6 +68,7 @@ fun LugaresScreenContent(
     onSearchQueryChange: (String) -> Unit,
     onReload: () -> Unit,
     getLugaresFiltrados: () -> List<Lugar>,
+    onLugarClick: (String) -> Unit,
     padding: PaddingValues
 ) {
     Box(
@@ -94,7 +97,10 @@ fun LugaresScreenContent(
                     if (filtrados.isEmpty()) {
                         EmptyScreen()
                     } else {
-                        LugaresList(lugares = filtrados)
+                        LugaresList(
+                            lugares = filtrados,
+                            onLugarClick = onLugarClick
+                        )
                     }
                 }
             }
