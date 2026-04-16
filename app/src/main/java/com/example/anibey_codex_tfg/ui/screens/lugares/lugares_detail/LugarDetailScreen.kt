@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -43,7 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import com.example.anibey_codex_tfg.domain.model.Lugar
 import com.example.anibey_codex_tfg.ui.common.FileUtils
 import com.example.anibey_codex_tfg.ui.common.component.ErrorScreen
@@ -141,13 +142,19 @@ private fun LugarHeaderSection(lugar: Lugar) {
         modifier = Modifier
             .fillMaxWidth()
             .height(300.dp)
+            .background(Color.DarkGray.copy(alpha = 0.2f))
     ) {
         if (lugar.imagenURL.isNotEmpty()) {
-            AsyncImage(
+            SubcomposeAsyncImage(
                 model = FileUtils.formatDriveUrl(lugar.imagenURL),
                 contentDescription = lugar.nombre,
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
+                loading = {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = PrimaryRed)
+                    }
+                }
             )
         }
         
