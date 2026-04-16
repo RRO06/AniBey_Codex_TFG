@@ -23,10 +23,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.Create
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -100,8 +99,6 @@ fun HomeScreen(
             HomeDrawerContent(
                 isGuest = isGuest,
                 onNavigateToProfile = onNavigateToProfile,
-                onNavigateToLogin = onNavigateToLogin,
-                onNavigateToRegister = onNavigateToRegister,
                 onNavigateToLugares = onNavigateToLugares,
                 onLogout = {
                     viewModel.logout { onLogout() }
@@ -130,8 +127,6 @@ fun HomeScreen(
 fun HomeDrawerContent(
     isGuest: Boolean,
     onNavigateToProfile: () -> Unit,
-    onNavigateToLogin: () -> Unit,
-    onNavigateToRegister: () -> Unit,
     onNavigateToLugares: () -> Unit,
     onLogout: () -> Unit,
     closeDrawer: () -> Unit
@@ -151,23 +146,17 @@ fun HomeDrawerContent(
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            // Sección común para ambos modos
+            DrawerItem("LUGARES", Icons.Default.Place, onClick = {
+                closeDrawer()
+                onNavigateToLugares()
+            })
+
+            // Solo mostrar perfil si no es invitado
             if (!isGuest) {
                 DrawerItem("PERFIL DE ALMA", Icons.Default.Person, onClick = {
                     closeDrawer()
                     onNavigateToProfile()
-                })
-                DrawerItem("LUGARES", null, onClick = {
-                    closeDrawer()
-                    onNavigateToLugares()
-                })
-            } else {
-                DrawerItem("VINCULAR ESENCIA", Icons.Default.Lock, onClick = {
-                    closeDrawer()
-                    onNavigateToLogin()
-                })
-                DrawerItem("CREAR VÍNCULO", Icons.Default.Create, onClick = {
-                    closeDrawer()
-                    onNavigateToRegister()
                 })
             }
 
