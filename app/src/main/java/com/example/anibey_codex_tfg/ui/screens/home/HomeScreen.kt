@@ -2,7 +2,6 @@ package com.example.anibey_codex_tfg.ui.screens.home
 
 import android.graphics.BitmapFactory
 import android.util.Base64
-import android.util.Log
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -51,7 +49,6 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -76,8 +73,10 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
 import com.example.anibey_codex_tfg.R
+import com.example.anibey_codex_tfg.domain.model.UserProfile
 import com.example.anibey_codex_tfg.ui.common.theme.PrimaryRed
 import com.example.anibey_codex_tfg.ui.common.theme.SoftGray
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -87,21 +86,13 @@ fun HomeScreen(
     onNavigateToProfile: () -> Unit = {},
     onNavigateToLogin: () -> Unit = {},
     onNavigateToRegister: () -> Unit = {},
+    onNavigateToLugares: () -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val userProfile by viewModel.userProfile.collectAsState(initial = null)
     val isGuest by viewModel.isGuest.collectAsState(initial = false)
-    val forceLogout by viewModel.forceLogout.collectAsState()
-
-    // Detectar logout forzado y redirigir
-    LaunchedEffect(forceLogout) {
-        if (forceLogout) {
-            Log.d("HomeScreen", "Logout forzado detectado por cambio de email en otro dispositivo")
-            onLogout()
-        }
-    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -111,6 +102,7 @@ fun HomeScreen(
                 onNavigateToProfile = onNavigateToProfile,
                 onNavigateToLogin = onNavigateToLogin,
                 onNavigateToRegister = onNavigateToRegister,
+                onNavigateToLugares = onNavigateToLugares,
                 onLogout = {
                     viewModel.logout { onLogout() }
                 },
@@ -140,6 +132,7 @@ fun HomeDrawerContent(
     onNavigateToProfile: () -> Unit,
     onNavigateToLogin: () -> Unit,
     onNavigateToRegister: () -> Unit,
+    onNavigateToLugares: () -> Unit,
     onLogout: () -> Unit,
     closeDrawer: () -> Unit
 ) {
@@ -162,6 +155,10 @@ fun HomeDrawerContent(
                 DrawerItem("PERFIL DE ALMA", Icons.Default.Person, onClick = {
                     closeDrawer()
                     onNavigateToProfile()
+                })
+                DrawerItem("LUGARES", null, onClick = {
+                    closeDrawer()
+                    onNavigateToLugares()
                 })
             } else {
                 DrawerItem("VINCULAR ESENCIA", Icons.Default.Lock, onClick = {
@@ -326,23 +323,22 @@ private fun GuestHomeContent(
 
 @Composable
 private fun AuthenticatedHomeContent(
-    userProfile: com.example.anibey_codex_tfg.domain.model.UserProfile?,
+    userProfile: UserProfile?,
     onNavigateToProfile: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    
-    // LÓGICA INTELIGENTE: Decodificar Base64 si no es una URL
+
     val imageData = remember(userProfile?.photoUrl) {
         val url = userProfile?.photoUrl
         if (url != null && !url.startsWith("http")) {
             try {
                 val decodedString = Base64.decode(url, Base64.DEFAULT)
                 BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 null
             }
         } else {
-            url // Es URL de internet o null
+            url
         }
     }
 
@@ -385,7 +381,7 @@ private fun AuthenticatedHomeContent(
                     .clickable {
                         isAnimating = true
                         scope.launch {
-                            kotlinx.coroutines.delay(300)
+                            delay(300)
                             onNavigateToProfile()
                             isAnimating = false
                         }
@@ -396,7 +392,7 @@ private fun AuthenticatedHomeContent(
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "BIENVENIDO, ${userProfile?.username?.uppercase() ?: "VIAJERO"}",
+            text = "SALUDOS, ${userProfile?.username?.uppercase() ?: "VIAJERO"}",
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Black,
                 letterSpacing = 2.sp,
