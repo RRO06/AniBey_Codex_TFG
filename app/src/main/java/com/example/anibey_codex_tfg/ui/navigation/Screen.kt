@@ -14,4 +14,7 @@ sealed interface Screen {
     data object Profile : Screen
     @Serializable
     data object Lugares : Screen
+
+    @Serializable
+    data class LugarDetail(val lugarId: String) : Screen
 }
