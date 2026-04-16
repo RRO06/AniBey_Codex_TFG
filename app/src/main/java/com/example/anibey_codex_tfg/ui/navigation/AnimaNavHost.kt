@@ -16,6 +16,7 @@ import com.example.anibey_codex_tfg.ui.login.ui.LoginScreen
 import com.example.anibey_codex_tfg.ui.screens.home.HomeScreen
 import com.example.anibey_codex_tfg.ui.screens.profile.ProfileScreen
 import com.example.anibey_codex_tfg.ui.screens.register.RegisterScreen
+import com.example.anibey_codex_tfg.ui.screens.lugares.LugaresScreen
 import com.example.anibey_codex_tfg.ui.welcome.ui.WelcomeScreen
 
 @Composable
@@ -100,6 +101,7 @@ fun AnimaNavHost(
                 onNavigateToProfile = { navController.navigate(Screen.Profile) },
                 onNavigateToLogin = { navController.navigate(Screen.Login) },
                 onNavigateToRegister = { navController.navigate(Screen.Register) },
+                onNavigateToLugares = { navController.navigate(Screen.Lugares) },
                 onLogout = {
                     navController.navigate(Screen.Welcome) {
                         popUpTo(Screen.Home) { inclusive = true }
@@ -119,6 +121,13 @@ fun AnimaNavHost(
                         launchSingleTop = true
                     }
                 }
+            )
+        }
+
+        composable<Screen.Lugares> {
+            LugaresScreen(
+                viewModel = hiltViewModel(),
+                onBackClick = { navController.popBackStack() }
             )
         }
     }
