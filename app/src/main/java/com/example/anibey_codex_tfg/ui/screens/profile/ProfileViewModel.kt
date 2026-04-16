@@ -13,7 +13,6 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.anibey_codex_tfg.data.local.datastore.SessionDataStore
-import com.example.anibey_codex_tfg.domain.model.SecurityEvent
 import com.example.anibey_codex_tfg.domain.model.UserProfile
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
@@ -23,7 +22,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
@@ -50,8 +48,6 @@ class ProfileViewModel @Inject constructor(
         loadUserProfile()
     }
 
-    // --- CARGA INICIAL ---
-
     private fun loadUserProfile() {
         val user = auth.currentUser ?: return
         viewModelScope.launch {
@@ -75,19 +71,21 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    // --- MANEJO DE INPUTS ---
-
-    fun onUsernameChange(newValue: String) = updateState { copy(username = newValue, usernameError = null) }
-    fun onEmailChange(newValue: String) = updateState { copy(email = newValue, emailError = null) }
-    fun onPasswordChange(newValue: String) = updateState { copy(password = newValue, passwordError = null) }
-    fun onCurrentPasswordChange(newValue: String) = updateState { copy(currentPassword = newValue, currentPasswordError = null) }
-    fun onPhotoChange(newValue: String?) = updateState { copy(photoUrl = newValue) }
-
-    private fun updateState(updater: ProfileState.() -> ProfileState) {
-        state = state.updater().copy(generalError = null)
+    fun onUsernameChange(newValue: String) {
+        state = state.copy(username = newValue, usernameError = null)
     }
-
-    // --- PROCESAMIENTO DE IMAGEN ---
+    fun onEmailChange(newValue: String) {
+        state = state.copy(email = newValue, emailError = null)
+    }
+    fun onPasswordChange(newValue: String) {
+        state = state.copy(password = newValue, passwordError = null)
+    }
+    fun onCurrentPasswordChange(newValue: String) {
+        state = state.copy(currentPassword = newValue, currentPasswordError = null)
+    }
+    fun onPhotoChange(newValue: String?) {
+        state = state.copy(photoUrl = newValue)
+    }
 
     /**
      * Procesa la foto de la galería y la guarda en memoria (Base64)
@@ -138,8 +136,7 @@ class ProfileViewModel @Inject constructor(
                 // 2. Procesar cambio de Email (enviar verificación pero NO guardar aún)
                 if (emailChanged) {
                     verifyAndPrepareNewEmail(user)
-                    // NO guardamos los datos hasta que se verifique el email
-                    finalizeSaveProcess(emailChanged = true, user = user)
+                    finalizeSaveProcess(emailChanged = true)
                     return@launch
                 }
 
@@ -152,7 +149,7 @@ class ProfileViewModel @Inject constructor(
                 persistAllChanges(user)
 
                 // 5. Finalizar flujo
-                finalizeSaveProcess(emailChanged = false, user = null)
+                finalizeSaveProcess(emailChanged = false)
 
             } catch (_: FirebaseAuthUserCollisionException) {
                 state = state.copy(isLoading = false, emailError = "Este correo ya está vinculado a otra cuenta")
@@ -191,9 +188,7 @@ class ProfileViewModel @Inject constructor(
                 state = state.copy(isLoading = false, emailError = "Correo ya en uso")
                 throw Exception("Email en uso")
             }
-        } catch (_: Exception) {
-            // Ignorar errores de búsqueda
-        }
+        } catch (_: Exception) {}
 
         // Enviar email de verificación pero NO actualizar aún
         user.verifyBeforeUpdateEmail(state.email).await()
@@ -219,31 +214,8 @@ class ProfileViewModel @Inject constructor(
         sessionDataStore.saveSession(updatedProfile)
     }
 
-    private suspend fun recordSecurityEvent(user: FirebaseUser, eventType: String, oldValue: String, newValue: String) {
-        try {
-            val event = SecurityEvent(
-                eventType = eventType,
-                timestamp = System.currentTimeMillis(),
-                deviceId = android.os.Build.ID, // ID único del dispositivo
-                oldValue = oldValue,
-                newValue = newValue
-            )
 
-            // Guardar evento en subcollection de seguridad
-            db.collection("users")
-                .document(user.uid)
-                .collection("security_events")
-                .add(event)
-                .await()
-
-            Log.d("ProfileViewModel", "Evento de seguridad registrado: $eventType")
-        } catch (e: Exception) {
-            Log.w("ProfileViewModel", "Error al registrar evento de seguridad: ${e.message}")
-            // No fallar el proceso si no se registra el evento
-        }
-    }
-
-    private fun finalizeSaveProcess(emailChanged: Boolean, user: FirebaseUser?) {
+    private fun finalizeSaveProcess(emailChanged: Boolean) {
         if (emailChanged) {
             state = state.copy(
                 isLoading = false,
@@ -264,8 +236,6 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    // --- GESTIÓN DE NAVEGACIÓN Y CIERRE ---
-
     fun hasUnsavedChanges(): Boolean = 
         state.username != originalUsername || 
         state.email != originalEmail || 
@@ -277,7 +247,9 @@ class ProfileViewModel @Inject constructor(
         else onConfirmBack()
     }
 
-    fun onDismissDiscardDialog() = updateState { copy(isDiscardDialogOpen = false) }
+    fun onDismissDiscardDialog() {
+        state = state.copy(isDiscardDialogOpen = false)
+    }
 
     fun onDismissVerificationDialog() {
         state = state.copy(
@@ -293,84 +265,37 @@ class ProfileViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                val user = auth.currentUser
-
-                // Si el usuario ya no está autenticado, significa que Firebase invalidó
-                // la sesión automáticamente al verificar el email (comportamiento esperado)
-                if (user == null) {
-                    Log.d("ProfileViewModel", "Sesión invalidada por Firebase (esperado tras verificar email)")
-                    // Limpiar datos locales y hacer logout
+                val user = auth.currentUser ?: run {
                     sessionDataStore.clearSession()
-                    state = state.copy(
-                        isLoading = false,
-                        showEmailVerificationDialog = false,
-                        isCheckingEmailVerification = false
-                    )
-                    delay(500)
+                    state = state.copy(isLoading = false)
                     onSuccess()
                     return@launch
                 }
 
-                // Intentar recargar usuario (puede fallar si la sesión está invalidada)
-                try {
-                    user.reload().await()
-                } catch (e: Exception) {
-                    Log.w("ProfileViewModel", "No se pudo recargar usuario: ${e.message}")
-                    // Si recarga falla, significa que la sesión fue invalidada
-                    sessionDataStore.clearSession()
-                    state = state.copy(
-                        isLoading = false,
-                        showEmailVerificationDialog = false,
-                        isCheckingEmailVerification = false
-                    )
-                    delay(500)
-                    onSuccess()
-                    return@launch
-                }
+                user.reload().await()
 
-                // Si llegamos aquí, verificar que el email fue actualizado
                 if (user.email == state.email) {
-                    Log.d("ProfileViewModel", "Email verificado exitosamente: ${user.email}")
-
-                    // Registrar evento de cambio de email ANTES de hacer logout
-                    recordSecurityEvent(user, "email_changed", originalEmail, state.email)
-
-                    // Persistir cambios ANTES de hacer logout
+                    Log.d("ProfileViewModel", "Email verificado: ${user.email}")
                     persistAllChanges(user)
-
-                    // NOTA: Firebase automáticamente invalida TODAS las sesiones cuando
-                    // se verifica un cambio de email, así que no necesitamos hacer nada más
-                    // Simplemente hacemos logout en este dispositivo
-
-                    // Limpiar sesión local
                     sessionDataStore.clearSession()
-
+                    auth.signOut()
                     state = state.copy(
                         isLoading = false,
                         showEmailVerificationDialog = false,
-                        isCheckingEmailVerification = false,
                         updateSuccess = true,
                         currentPassword = "",
                         password = ""
                     )
-
-                    // Hacer logout para cerrar sesión en este dispositivo
-                    auth.signOut()
-
-                    delay(500)
                     onSuccess()
                 } else {
                     state = state.copy(
                         isLoading = false,
-                        generalError = "El correo aún no ha sido verificado. Por favor intenta de nuevo."
+                        generalError = "El correo aún no ha sido verificado. Intenta de nuevo."
                     )
                 }
             } catch (e: Exception) {
-                Log.e("ProfileViewModel", "Error al verificar email", e)
-                state = state.copy(
-                    isLoading = false,
-                    generalError = "Error: ${e.localizedMessage}"
-                )
+                Log.e("ProfileViewModel", "Error al verificar email: ${e.message}")
+                state = state.copy(isLoading = false, generalError = "Error: ${e.localizedMessage}")
             }
         }
     }
