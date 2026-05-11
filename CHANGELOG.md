@@ -6,6 +6,26 @@ El formato sigue las recomendaciones de Keep a Changelog
 y el versionado utiliza Semantic Versioning.
 
 ---
+
+## [0.0.6] - 2026-04-16
+
+### Añadido
+- Nueva pantalla de detalle de lugar (`LugarDetailScreen`) con diseño optimizado para lectura (estilo "Crónica").
+- Indicadores de carga (`CircularProgressIndicator`) en las imágenes de lugares.
+- Utilidad centralizada `FileUtils` para el procesamiento de URLs de Google Drive.
+- Navegación completa entre la lista de lugares y sus detalles.
+
+### Modificado
+- El modo invitado ahora permite el acceso a la sección de "Lugares".
+- Rediseño del menú lateral (Drawer) para una estética más limpia y compacta.
+- El buscador de lugares ahora filtra exclusivamente por el nombre del lugar.
+- Mejora de la modularidad en el código de las vistas de detalles.
+
+### Corregido
+- Solución al problema de carga de documentos de Firestore por discrepancia en el nombre de la colección.
+- Ajuste de visibilidad de elementos del Drawer según el tipo de sesión (Usuario vs Invitado).
+
+---
 ## [0.0.5] - 2026-04-09
 
 ### Añadido

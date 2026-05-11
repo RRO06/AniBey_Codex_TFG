@@ -26,6 +26,7 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -86,6 +87,7 @@ fun HomeScreen(
     onNavigateToLogin: () -> Unit = {},
     onNavigateToRegister: () -> Unit = {},
     onNavigateToLugares: () -> Unit = {},
+    onNavigateToBestiario: () -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -100,6 +102,7 @@ fun HomeScreen(
                 isGuest = isGuest,
                 onNavigateToProfile = onNavigateToProfile,
                 onNavigateToLugares = onNavigateToLugares,
+                onNavigateToBestiario = onNavigateToBestiario,
                 onLogout = {
                     viewModel.logout { onLogout() }
                 },
@@ -128,6 +131,7 @@ fun HomeDrawerContent(
     isGuest: Boolean,
     onNavigateToProfile: () -> Unit,
     onNavigateToLugares: () -> Unit,
+    onNavigateToBestiario: () -> Unit,
     onLogout: () -> Unit,
     closeDrawer: () -> Unit
 ) {
@@ -150,6 +154,11 @@ fun HomeDrawerContent(
             DrawerItem("LUGARES", Icons.Default.Place, onClick = {
                 closeDrawer()
                 onNavigateToLugares()
+            })
+
+            DrawerItem("BESTIARIO", Icons.Default.Warning, onClick = {
+                closeDrawer()
+                onNavigateToBestiario()
             })
 
             // Solo mostrar perfil si no es invitado

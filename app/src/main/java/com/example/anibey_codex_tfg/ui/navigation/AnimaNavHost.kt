@@ -19,6 +19,7 @@ import com.example.anibey_codex_tfg.ui.screens.profile.ProfileScreen
 import com.example.anibey_codex_tfg.ui.screens.register.RegisterScreen
 import com.example.anibey_codex_tfg.ui.screens.lugares.LugaresScreen
 import com.example.anibey_codex_tfg.ui.screens.lugares.lugares_detail.LugarDetailScreen
+import com.example.anibey_codex_tfg.ui.screens.bestiario.BestiarioScreen
 import com.example.anibey_codex_tfg.ui.welcome.ui.WelcomeScreen
 
 @Composable
@@ -104,6 +105,7 @@ fun AnimaNavHost(
                 onNavigateToLogin = { navController.navigate(Screen.Login) },
                 onNavigateToRegister = { navController.navigate(Screen.Register) },
                 onNavigateToLugares = { navController.navigate(Screen.Lugares) },
+                onNavigateToBestiario = { navController.navigate(Screen.Bestiario) },
                 onLogout = {
                     navController.navigate(Screen.Welcome) {
                         popUpTo(Screen.Home) { inclusive = true }
@@ -131,6 +133,13 @@ fun AnimaNavHost(
                 viewModel = hiltViewModel(),
                 onBackClick = { navController.popBackStack() },
                 onLugarClick = { id -> navController.navigate(Screen.LugarDetail(id)) }
+            )
+        }
+
+        composable<Screen.Bestiario> {
+            BestiarioScreen(
+                viewModel = hiltViewModel(),
+                onBackClick = { navController.popBackStack() }
             )
         }
 
