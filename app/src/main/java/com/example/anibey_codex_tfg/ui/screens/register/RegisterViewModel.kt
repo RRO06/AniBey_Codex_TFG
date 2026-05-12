@@ -8,7 +8,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.anibey_codex_tfg.data.local.datastore.SessionDataStore
 import com.example.anibey_codex_tfg.domain.model.UserProfile
+import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -38,6 +40,27 @@ class RegisterViewModel @Inject constructor(
 
     fun onPasswordChange(newValue: String) {
         state = state.copy(password = newValue, passwordError = null)
+    }
+
+    fun dismissToast() {
+        state = state.copy(showToast = false, toastMessage = null)
+    }
+
+    private fun showToast(message: String) {
+        viewModelScope.launch {
+            state = state.copy(toastMessage = message, showToast = true)
+            delay(5000)
+            dismissToast()
+        }
+    }
+
+    private fun mapFirebaseError(exception: Exception): String {
+        return when (exception) {
+            is FirebaseAuthInvalidCredentialsException -> "El e-mail no es reconocido por Gaia (formato incorrecto)."
+            is FirebaseAuthUserCollisionException -> "Este alma ya está vinculada. Intenta iniciar sesión."
+            is FirebaseNetworkException -> "La conexión con el vacío ha fallado. Revisa tu red."
+            else -> "Un evento inesperado ha perturbado el pacto: ${exception.localizedMessage ?: "Error desconocido"}"
+        }
     }
 
     fun sendVerificationEmail() {
@@ -74,7 +97,10 @@ class RegisterViewModel @Inject constructor(
                             )
                         }
                 } else {
-                    state = state.copy(isLoading = false, emailError = "Error en el vínculo: ${exception.localizedMessage}")
+                    state = state.copy(
+                        isLoading = false,
+                        emailError = mapFirebaseError(exception)
+                    )
                 }
             }
     }
@@ -97,7 +123,7 @@ class RegisterViewModel @Inject constructor(
             .addOnFailureListener { exception ->
                 state = state.copy(
                     isLoading = false,
-                    emailError = "No se pudo enviar el correo: ${exception.localizedMessage}"
+                    emailError = "No se pudo enviar el correo: ${mapFirebaseError(exception)}"
                 )
             }
     }
@@ -121,10 +147,8 @@ class RegisterViewModel @Inject constructor(
                         emailError = null
                     )
                 } else {
-                    state = state.copy(
-                        isLoading = false,
-                        emailError = "El lazo aún no ha sido confirmado en tu correo."
-                    )
+                    state = state.copy(isLoading = false)
+                    showToast("El lazo aún no ha sido confirmado en tu correo.")
                 }
             } else {
                 state = state.copy(isLoading = false, emailError = "Error al conectar con el vacío.")
@@ -190,7 +214,6 @@ class RegisterViewModel @Inject constructor(
                 )
                 
                 Log.d("REGISTER", "Guardando en Firestore...")
-                // ESTA LÍNEA ES LA QUE SE QUEDABA PILLADA
                 db.collection("users").document(user.uid).set(profile).await()
 
                 // 3. Guardar sesión local
@@ -204,7 +227,7 @@ class RegisterViewModel @Inject constructor(
                 Log.e("REGISTER", "Error fatal: ${e.localizedMessage}")
                 state = state.copy(
                     isLoading = false,
-                    passwordError = "Error: ${e.localizedMessage}. ¿Has activado Firestore en la Consola de Firebase?"
+                    passwordError = "Error en el pacto: ${mapFirebaseError(e)}"
                 )
             }
         }

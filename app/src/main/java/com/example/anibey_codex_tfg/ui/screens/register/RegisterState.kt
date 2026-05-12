@@ -17,7 +17,9 @@ data class RegisterState(
     val passwordError: String? = null,
     val currentStep: RegisterStep = RegisterStep.EMAIL_ENTRY,
     val isLoading: Boolean = false,
-    val isVerified: Boolean = false
+    val isVerified: Boolean = false,
+    val toastMessage: String? = null,
+    val showToast: Boolean = false
 )
 
 data class RegisterActions(
@@ -28,5 +30,6 @@ data class RegisterActions(
     val onCheckVerification: () -> Unit = {},
     val onFinalizePact: (onSuccess: () -> Unit) -> Unit = { _ -> },
     val onBack: () -> Unit = {},
-    val onRegisterSuccess : () -> Unit = {}
+    val onRegisterSuccess : () -> Unit = {},
+    val onDismissToast: () -> Unit = {}
 )

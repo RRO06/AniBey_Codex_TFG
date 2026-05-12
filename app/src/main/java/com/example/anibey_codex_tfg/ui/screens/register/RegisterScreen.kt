@@ -45,7 +45,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.anibey_codex_tfg.R
 import com.example.anibey_codex_tfg.ui.common.component.AnimaTextField
+import com.example.anibey_codex_tfg.ui.common.component.AnimaToast
 import com.example.anibey_codex_tfg.ui.common.theme.AniBey_Codex_TFGTheme
+import com.example.anibey_codex_tfg.ui.common.theme.GoldAccent
 import com.example.anibey_codex_tfg.ui.common.theme.PrimaryRed
 
 @Composable
@@ -67,7 +69,8 @@ fun RegisterScreen(
         onBack = {
             if (state.currentStep == RegisterStep.EMAIL_ENTRY) onNavigateBack()
             else viewModel.editEmail()
-        }
+        },
+        onDismissToast = viewModel::dismissToast,
     )
 
     RegisterContent(state = state, actions = actions, modifier = modifier)
@@ -92,15 +95,15 @@ fun RegisterContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
             // Cabecera que cambia según el paso
             RegisterHeader(step = state.currentStep)
 
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
             ) {
                 when (state.currentStep) {
                     RegisterStep.EMAIL_ENTRY -> EmailEntryStep(state, actions)
@@ -112,6 +115,11 @@ fun RegisterContent(
             // Botonera Inferior
             RegisterBottomBar(state = state, actions = actions)
         }
+        AnimaToast(
+            show = state.showToast,
+            message = state.toastMessage ?: "",
+            onDismiss = actions.onDismissToast
+        )
     }
 }
 
@@ -138,80 +146,92 @@ private fun VerifyWaitStep(state: RegisterState, actions: RegisterActions) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 10.dp),
+            .padding(top = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(24.dp) // Más aire entre elementos
     ) {
-        RitualIcon(state.canResend, state.resendCountdown)
-
-        Text(
-            text = "EL SUSURRO HA SIDO LANZADO",
-            style = MaterialTheme.typography.titleLarge.copy(
-                color = PrimaryRed,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 2.sp,
-                shadow = Shadow(color = PrimaryRed.copy(alpha = 0.4f), blurRadius = 10f)
-            ),
-            textAlign = TextAlign.Center
+        // 1. EL NÚCLEO RITUAL (Visual central)
+        RitualIcon(
+            state.canResend,
+            state.resendCountdown
         )
 
+        // 3. TARJETA DE INFORMACIÓN
         EmailInfoCard(state.email)
 
+        // 4. FEEDBACK TEMPORAL
         Box(
             modifier = Modifier
-                .height(40.dp) // Altura suficiente para el icono y el texto
+                .height(48.dp)
                 .fillMaxWidth(),
             contentAlignment = Alignment.Center
         ) {
-            val visibilityAlpha = if (!state.canResend) 1f else 0f
-            Box(modifier = Modifier.graphicsLayer(alpha = visibilityAlpha)) {
+            if (!state.canResend) {
                 ResendCountdown(state.resendCountdown)
+            } else {
+                TextButton(
+                    onClick = actions.onSendVerification,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text(
+                        "REPETIR EL SUSURRO",
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            letterSpacing = 2.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                }
             }
         }
 
-        // --- BOTONES ---
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+        // 5. ACCIONES SECUNDARIAS
+
+        OutlinedButton(
+            onClick = actions.onBack,
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
+            shape = RoundedCornerShape(8.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = Color.White,
+                containerColor = Color.White.copy(alpha = 0.1f)
+            ),
+            modifier = Modifier.height(40.dp)
         ) {
-            TextButton(
-                onClick = actions.onSendVerification,
-                enabled = state.canResend,
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = if (state.canResend) Color.White else Color.White.copy(alpha = 0.4f)
-                )
-            ) {
-                Text("REENVIAR SUSURRO", style = MaterialTheme.typography.labelLarge)
-            }
-
-            OutlinedButton(
-                onClick = actions.onBack,
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
-                shape = RoundedCornerShape(4.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                modifier = Modifier.height(45.dp)
-            ) {
-                Icon(Icons.Default.Edit, null, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("CORREGIR E-MAIL", style = MaterialTheme.typography.labelMedium)
-            }
+            Icon(
+                imageVector = Icons.Default.Edit,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                "CAMBIAR EMAIL",
+                style = MaterialTheme.typography.labelSmall
+            )
         }
 
+
+        // Errores con Estilo
         state.emailError?.let {
-            Text(
-                text = it,
-                color = PrimaryRed,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(horizontal = 20.dp),
-                textAlign = TextAlign.Center
-            )
+            Surface(
+                color = PrimaryRed.copy(alpha = 0.2f),
+                shape = RoundedCornerShape(4.dp),
+                border = BorderStroke(1.dp, PrimaryRed.copy(alpha = 0.5f))
+            ) {
+                Text(
+                    text = it,
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    textAlign = TextAlign.Center
+                )
+            }
         }
     }
 }
 
 @Composable
 private fun RitualIcon(canResend: Boolean, countdown: Int) {
-    // Usamos un Box con tamaño fijo para que actúe como "ancla" y no empuje el layout
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
@@ -221,8 +241,8 @@ private fun RitualIcon(canResend: Boolean, countdown: Int) {
         CircularProgressIndicator(
             progress = { if (!canResend) (60 - countdown) / 60f else 1f },
             modifier = Modifier.fillMaxSize(),
-            color = if (!canResend) Color(0xFFE0C060) else PrimaryRed,
-            strokeWidth = 4.dp,
+            color = if (!canResend) GoldAccent else PrimaryRed,
+            strokeWidth = 2.dp,
             trackColor = Color.White.copy(alpha = 0.1f),
             strokeCap = StrokeCap.Round,
         )
@@ -230,7 +250,7 @@ private fun RitualIcon(canResend: Boolean, countdown: Int) {
         Image(
             painter = painterResource(id = R.drawable.ic_whisper_sent),
             contentDescription = null,
-            modifier = Modifier.size(60.dp)
+            modifier = Modifier.size(200.dp)
         )
     }
 }
@@ -256,23 +276,20 @@ private fun EmailInfoCard(email: String) {
 private fun ResendCountdown(countdown: Int) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-        modifier = Modifier.fillMaxWidth() // Quitamos el padding vertical para controlar la altura desde el padre
+        horizontalArrangement = Arrangement.Center
     ) {
         Icon(
             imageVector = Icons.Default.LockClock,
             contentDescription = null,
-            tint = Color(0xFFFFD700),
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier.size(16.dp)
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
-            text = "PODRÁS REINTENTAR EN ${countdown}s",
+            text = "NUEVA INTENTO EN ${countdown}s",
             style = MaterialTheme.typography.labelLarge.copy(
-                fontWeight = FontWeight.ExtraBold,
-                shadow = Shadow(color = Color.Black, blurRadius = 4f)
-            ),
-            color = Color(0xFFFFD700)
+                letterSpacing = 1.sp,
+                fontWeight = FontWeight.Light
+            )
         )
     }
 }
@@ -370,7 +387,7 @@ fun RegisterContentPreview() {
             state = RegisterState(
                 currentStep = RegisterStep.VERIFY_PENDING,
                 resendCountdown = 50,
-                canResend = false
+                canResend = true
             ),
             actions = RegisterActions(),
             modifier = Modifier
