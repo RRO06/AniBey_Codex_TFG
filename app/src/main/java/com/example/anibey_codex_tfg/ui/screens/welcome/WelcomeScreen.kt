@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.paint
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
@@ -19,12 +20,9 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -146,44 +144,57 @@ fun WelcomeScreenContent(
                 // BOTÓN INICIAR SESIÓN
                 Button(
                     onClick = { actions.onLoginClick() },
-                    modifier = Modifier.fillMaxWidth().height(60.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(60.dp),
                     shape = RoundedCornerShape(2.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryRed),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 10.dp)
                 ) {
-                    Text("INICIAR SESIÓN", style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp))
+                    Text(
+                        "INICIAR SESIÓN",
+                        style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp)
+                    )
                 }
 
                 // BOTÓN INVITADO
                 OutlinedButton(
                     onClick = { actions.onGuestClick() },
-                    modifier = Modifier.fillMaxWidth().height(60.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(60.dp),
                     shape = RoundedCornerShape(2.dp),
                     border = BorderStroke(1.5.dp, PrimaryRed),
                     colors = ButtonDefaults.outlinedButtonColors(
                         containerColor = Color.White.copy(alpha = 0.4f)
                     )
                 ) {
-                    Text("MODO INVITADO", style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp), color = PrimaryRed)
+                    Text(
+                        "MODO INVITADO",
+                        style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
+                        color = PrimaryRed
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
 
                 // REGISTRO
-                Text(
-                    text = buildAnnotatedString {
-                        append("¿Eres nuevo en Gaia? ")
-                        withStyle(style = SpanStyle(
-                            color = PrimaryRed,
-                            fontWeight = FontWeight.Bold,
-                            textDecoration = TextDecoration.Underline
-                        )) {
-                            append("Regístrate")
-                        }
-                    },
-                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp),
-                    modifier = Modifier.clickable { actions.onRegisterClick() }
-                )
+                Row {
+                    Text(
+                        text = "¿Eres nuevo en Gaia? ",
+                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp),
+                    )
+                    Text(
+                        text = "Regístrate",
+                        color = PrimaryRed,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp),
+                        fontWeight = FontWeight.Bold,
+                        textDecoration = TextDecoration.Underline,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .clickable { actions.onRegisterClick() }
+                    )
+                }
             }
         }
     }
