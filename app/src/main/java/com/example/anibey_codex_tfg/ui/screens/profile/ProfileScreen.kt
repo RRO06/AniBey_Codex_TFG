@@ -40,6 +40,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.anibey_codex_tfg.R
@@ -65,7 +66,7 @@ fun ProfileScreen(
         onPasswordChange = viewModel::onPasswordChange,
         onCurrentPasswordChange = viewModel::onCurrentPasswordChange,
         onPhotoChange = viewModel::onPhotoChange,
-        onSave = { viewModel.saveProfile() },
+        onSave = viewModel::saveProfile,
         onBack = { viewModel.onBackRequested(onNavigateBack) },
         uploadPhoto = viewModel::uploadPhoto,
         onDismissDiscardDialog = viewModel::onDismissDiscardDialog,
@@ -79,7 +80,6 @@ fun ProfileScreen(
         onConfirmVerification = {
             viewModel.onConfirmEmailVerification(
                 onSuccess = {
-                    // Logout después de que la UI se actualice
                     viewModel.logout()
                     onLogout()
                 }
@@ -327,7 +327,10 @@ private fun ProfileFormFields(state: ProfileState, actions: ProfileActions) {
 }
 
 @Composable
-private fun SaveButton(state: ProfileState, actions: ProfileActions) {
+private fun SaveButton(
+    state: ProfileState,
+    actions: ProfileActions
+) {
     Button(
         onClick = actions.onSave,
         modifier = Modifier
@@ -343,4 +346,14 @@ private fun SaveButton(state: ProfileState, actions: ProfileActions) {
             Text("GUARDAR CAMBIOS", color = Color.White, fontWeight = FontWeight.Bold)
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ProfileScreenPreview() {
+    ProfileContent(
+        state = ProfileState(),
+        actions = ProfileActions(),
+        modifier = Modifier
+    )
 }

@@ -151,9 +151,11 @@ class ProfileViewModel @Inject constructor(
                 // 5. Finalizar flujo
                 finalizeSaveProcess(emailChanged = false)
 
-            } catch (_: FirebaseAuthUserCollisionException) {
+            } catch (e: FirebaseAuthUserCollisionException) {
+                Log.e("ProfileViewModel", "Error al guardar perfil: Correo ya en uso -> ${e.message}")
                 state = state.copy(isLoading = false, emailError = "Este correo ya está vinculado a otra cuenta")
             } catch (e: Exception) {
+                Log.e("ProfileViewModel", "Error al guardar perfil: ${e.message}")
                 state = state.copy(isLoading = false, generalError = e.localizedMessage)
             }
         }
