@@ -1,4 +1,4 @@
-package com.example.anibey_codex_tfg.ui.screens.profile
+package com.example.anibey_codex_tfg.ui.common.component
 
 import android.graphics.BitmapFactory
 import android.util.Base64
@@ -8,9 +8,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -29,7 +35,8 @@ import com.example.anibey_codex_tfg.R
 @Composable
 fun ProfilePhotoSelector(
     photoUrl: String?,
-    onClick: () -> Unit,
+    onSelectClick: () -> Unit,
+    onDeleteClick: () -> Unit,
     isLoading: Boolean = false
 ) {
     // Intentamos decodificar si parece Base64 (no empieza por http)
@@ -38,7 +45,7 @@ fun ProfilePhotoSelector(
             try {
                 val decodedString = Base64.decode(photoUrl, Base64.DEFAULT)
                 BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 null
             }
         } else {
@@ -47,32 +54,54 @@ fun ProfilePhotoSelector(
     }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Surface(
-            shape = CircleShape,
-            border = BorderStroke(2.dp, Color.White),
-            modifier = Modifier.size(120.dp)
-        ) {
-            Box(
-                modifier = Modifier.clip(CircleShape),
-                contentAlignment = Alignment.Center
+        Box(contentAlignment = Alignment.BottomEnd) {
+            Surface(
+                shape = CircleShape,
+                border = BorderStroke(2.dp, Color.White),
+                modifier = Modifier.size(120.dp)
             ) {
-                Image(
-                    painter = rememberAsyncImagePainter(
-                        model = imageData ?: R.drawable.default_avatar,
-                        placeholder = painterResource(R.drawable.default_avatar),
-                        error = painterResource(R.drawable.default_avatar)
-                    ),
-                    contentDescription = "Foto de perfil",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(120.dp)
-                )
+                Box(
+                    modifier = Modifier.clip(CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = rememberAsyncImagePainter(
+                            model = imageData ?: R.drawable.default_avatar,
+                            placeholder = painterResource(R.drawable.default_avatar),
+                            error = painterResource(R.drawable.default_avatar)
+                        ),
+                        contentDescription = "Foto de perfil",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.size(120.dp)
+                    )
+                }
+            }
+
+            // Icono de basura para borrar foto
+            if (photoUrl != null) {
+                IconButton(
+                    onClick = onDeleteClick,
+                    modifier = Modifier
+                        .size(36.dp)
+                        .offset(x = 4.dp, y = 4.dp),
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = Color.DarkGray,
+                        contentColor = Color.White
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Borrar foto",
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedButton(
-            onClick = onClick,
+            onClick = onSelectClick,
             border = BorderStroke(1.dp, Color.White),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
             enabled = !isLoading

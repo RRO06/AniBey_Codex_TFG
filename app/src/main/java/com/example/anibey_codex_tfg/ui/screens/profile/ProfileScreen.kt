@@ -1,5 +1,6 @@
 package com.example.anibey_codex_tfg.ui.screens.profile
 
+import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -11,8 +12,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,7 +48,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.anibey_codex_tfg.R
 import com.example.anibey_codex_tfg.ui.common.component.AnimaTextField
+import com.example.anibey_codex_tfg.ui.common.component.ProfilePhotoSelector
 import com.example.anibey_codex_tfg.ui.common.theme.PrimaryRed
+
+data class ProfileActions(
+    val onUsernameChange: (String) -> Unit = {},
+    val onEmailChange: (String) -> Unit = {},
+    val onPasswordChange: (String) -> Unit = {},
+    val onCurrentPasswordChange: (String) -> Unit = {},
+    val onPhotoChange: (String?) -> Unit = {},
+    val onSave: () -> Unit = {},
+    val onBack: () -> Unit = {},
+    val uploadPhoto: (Uri) -> Unit = {},
+    val onDeletePhoto: () -> Unit = {},
+    val onDismissDiscardDialog: () -> Unit = {},
+    val onConfirmDiscard: () -> Unit = {},
+    val onDismissVerificationDialog: () -> Unit = {},
+    val onConfirmVerification: () -> Unit = {}
+)
 
 @Composable
 fun ProfileScreen(
@@ -55,7 +75,7 @@ fun ProfileScreen(
     modifier: Modifier = Modifier
 ) {
     val state = viewModel.state
-    
+
     BackHandler {
         viewModel.onBackRequested(onNavigateBack)
     }
@@ -69,6 +89,7 @@ fun ProfileScreen(
         onSave = viewModel::saveProfile,
         onBack = { viewModel.onBackRequested(onNavigateBack) },
         uploadPhoto = viewModel::uploadPhoto,
+        onDeletePhoto = { viewModel.onPhotoChange(null) },
         onDismissDiscardDialog = viewModel::onDismissDiscardDialog,
         onConfirmDiscard = {
             viewModel.onDismissDiscardDialog()
@@ -87,7 +108,11 @@ fun ProfileScreen(
         }
     )
 
-    ProfileContent(state = state, actions = actions, modifier = modifier)
+    ProfileContent(
+        state = state,
+        actions = actions,
+        modifier = modifier
+    )
 }
 
 @Composable
@@ -120,8 +145,9 @@ fun ProfileContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 32.dp)
-                .verticalScroll(scrollState),
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(horizontal = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             ProfileHeader(actions)
@@ -132,17 +158,24 @@ fun ProfileContent(
 
             ProfilePhotoSelector(
                 photoUrl = state.photoUrl,
-                onClick = { imageLauncher.launch("image/*") },
+                onSelectClick = { imageLauncher.launch("image/*") },
+                onDeleteClick = actions.onDeletePhoto,
                 isLoading = state.isLoading
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            ProfileFormFields(state, actions)
-            Spacer(modifier = Modifier.height(48.dp))
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(scrollState),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                ProfileFormFields(state, actions)
+            }
 
             SaveButton(state, actions)
-            Spacer(modifier = Modifier.height(60.dp))
+
         }
     }
 }
@@ -220,7 +253,10 @@ private fun EmailVerificationDialog(state: ProfileState, actions: ProfileActions
                     enabled = !state.isLoading
                 ) {
                     if (state.isLoading) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White)
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = Color.White
+                        )
                     } else {
                         Text("CONFIRMADO", fontWeight = FontWeight.Bold)
                     }
@@ -247,8 +283,7 @@ private fun EmailVerificationDialog(state: ProfileState, actions: ProfileActions
 private fun ProfileHeader(actions: ProfileActions) {
     Row(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 48.dp),
+            .fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = actions.onBack) {
@@ -335,6 +370,7 @@ private fun SaveButton(
         onClick = actions.onSave,
         modifier = Modifier
             .fillMaxWidth()
+            .padding(vertical = 16.dp)
             .height(50.dp),
         enabled = !state.isLoading,
         shape = RoundedCornerShape(2.dp),

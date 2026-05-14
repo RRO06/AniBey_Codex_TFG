@@ -20,18 +20,3 @@ data class ProfileState(
     val emailVerificationCountdown: Int = 0,
     val isCheckingEmailVerification: Boolean = false
 )
-
-data class ProfileActions(
-    val onUsernameChange: (String) -> Unit = {},
-    val onEmailChange: (String) -> Unit = {},
-    val onPasswordChange: (String) -> Unit = {},
-    val onCurrentPasswordChange: (String) -> Unit = {},
-    val onPhotoChange: (String?) -> Unit = {},
-    val onSave: () -> Unit = {},
-    val onBack: () -> Unit = {},
-    val uploadPhoto: (Uri) -> Unit = {},
-    val onDismissDiscardDialog: () -> Unit = {},
-    val onConfirmDiscard: () -> Unit = {},
-    val onDismissVerificationDialog: () -> Unit = {},
-    val onConfirmVerification: () -> Unit = {}
-)
