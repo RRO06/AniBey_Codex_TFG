@@ -1,6 +1,9 @@
 package com.example.anibey_codex_tfg.domain.model
 
+import com.google.firebase.firestore.DocumentId
+
 data class Lugar(
+    @DocumentId
     val id: String = "",
     val nombre: String = "",
     val descripcion: String = "",

@@ -25,22 +25,16 @@ class LugarDetailViewModel @Inject constructor(
             db.collection("lugar").document(lugarId).get()
                 .addOnSuccessListener { doc ->
                     if (doc.exists()) {
-                        @Suppress("UNCHECKED_CAST")
-                        val personajesList = doc.get("personajes") as? List<String> ?: emptyList()
-                        @Suppress("UNCHECKED_CAST")
-                        val monstruosList = doc.get("monstruos") as? List<String> ?: emptyList()
-
-                        val lugar = Lugar(
-                            id = doc.id,
-                            nombre = doc.getString("nombre") ?: "",
-                            descripcion = doc.getString("descripcion") ?: "",
-                            tipo = doc.getString("tipo") ?: "",
-                            region = doc.getString("region") ?: "",
-                            imagenURL = doc.getString("imagenURL") ?: "",
-                            personajes = personajesList,
-                            monstruos = monstruosList
-                        )
-                        _uiState.value = LugarDetailState.Success(lugar)
+                        try {
+                            val lugar = doc.toObject(Lugar::class.java)
+                            if (lugar != null) {
+                                _uiState.value = LugarDetailState.Success(lugar)
+                            } else {
+                                _uiState.value = LugarDetailState.Error("No se pudo procesar la información del lugar")
+                            }
+                        } catch (e: Exception) {
+                            _uiState.value = LugarDetailState.Error("Error en el formato de datos")
+                        }
                     } else {
                         _uiState.value = LugarDetailState.Error("El lugar no existe")
                     }

@@ -39,22 +39,9 @@ class LugaresViewModel @Inject constructor(
                     .addOnSuccessListener { documents ->
                         val lugares = documents.mapNotNull { doc ->
                             try {
-                                @Suppress("UNCHECKED_CAST")
-                                val personajesList = doc.get("personajes") as? List<String> ?: emptyList()
-                                @Suppress("UNCHECKED_CAST")
-                                val monstruosList = doc.get("monstruos") as? List<String> ?: emptyList()
-
-                                Lugar(
-                                    id = doc.id,
-                                    nombre = doc.getString("nombre") ?: "",
-                                    descripcion = doc.getString("descripcion") ?: "",
-                                    tipo = doc.getString("tipo") ?: "",
-                                    region = doc.getString("region") ?: "",
-                                    imagenURL = doc.getString("imagenURL") ?: "",
-                                    personajes = personajesList,
-                                    monstruos = monstruosList
-                                )
+                                doc.toObject(Lugar::class.java)
                             } catch (e: Exception) {
+                                Log.e("LugaresViewModel", "Error al convertir documento: ${e.message}")
                                 null
                             }
                         }
@@ -81,7 +68,7 @@ class LugaresViewModel @Inject constructor(
         } else {
             // Filtrar SOLO por nombre como has pedido
             allLugares.filter { lugar ->
-                lugar.nombre.lowercase().contains(query)
+                lugar.nombre.lowercase().startsWith(query)
             }
         }
     }

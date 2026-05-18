@@ -17,4 +17,7 @@ sealed interface Screen {
     data object Bestiario : Screen
     @Serializable
     data class LugarDetail(val lugarId: String) : Screen
+
+    @Serializable
+    data class MonstruoDetail(val monstruoId: String) : Screen
 }
