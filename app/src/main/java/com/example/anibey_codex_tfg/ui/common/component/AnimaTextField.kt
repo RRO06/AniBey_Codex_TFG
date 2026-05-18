@@ -37,7 +37,7 @@ fun AnimaTextField(
     val mainColor = if (isError) Color.Red else PrimaryRed
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        // 1. Etiqueta superior
+        // Etiqueta superior
         AnimaLabel(label, mainColor)
 
         TextField(
@@ -45,17 +45,20 @@ fun AnimaTextField(
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
             isError = isError,
-            textStyle = MaterialTheme.typography.bodyLarge.copy(
+            textStyle = MaterialTheme
+                .typography
+                .bodyLarge.copy(
                 fontFamily = FontFamily.Serif,
                 fontSize = 18.sp
             ),
-            // 2. Transformación visual (Ocultar/Mostrar)
-            visualTransformation = if (isPassword && !passwordVisible) {
-                PasswordVisualTransformation()
-            } else {
-                VisualTransformation.None
-            },
-            // 3. Icono de ojo
+            // Transformación visual
+            visualTransformation =
+                if ( isPassword && !passwordVisible ) {
+                    PasswordVisualTransformation()
+                } else {
+                    VisualTransformation.None
+                },
+            //Icono de ojo
             trailingIcon = {
                 if (isPassword) {
                     PasswordVisibilityIcon(
@@ -65,7 +68,7 @@ fun AnimaTextField(
                     )
                 }
             },
-            // 4. Texto de error
+            // Texto de error
             supportingText = {
                 if (isError) ErrorSupportingText(errorMessage)
             },
@@ -73,8 +76,6 @@ fun AnimaTextField(
         )
     }
 }
-
-// --- Sub-composables para mejorar la legibilidad ---
 
 @Composable
 private fun AnimaLabel(text: String, color: Color) {
@@ -134,11 +135,11 @@ private fun animaTextFieldColors() = TextFieldDefaults.colors(
 
 @Preview(showBackground = true)
 @Composable
-fun AnimaTextFieldErrorPreview() {
+fun AnimaTextFieldPreview() {
     AnimaTextField(
-        value = "usuario_erroneo",
+        value = "123456",
         onValueChange = {},
-        label = "Nombre de Usuario",
-        errorMessage = "El nombre no puede estar vacío"
+        label = "Contraseña",
+        isPassword = true
     )
 }

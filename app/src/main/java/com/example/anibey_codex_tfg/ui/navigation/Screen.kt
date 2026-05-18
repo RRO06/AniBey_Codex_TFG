@@ -3,8 +3,7 @@ package com.example.anibey_codex_tfg.ui.navigation
 import kotlinx.serialization.Serializable
 
 sealed interface Screen {
-    @Serializable
-    data object Welcome : Screen
+    @Serializable data object Welcome : Screen
 
     @Serializable data object Login: Screen
     @Serializable data object Register: Screen
@@ -16,7 +15,6 @@ sealed interface Screen {
     data object Lugares : Screen
     @Serializable
     data object Bestiario : Screen
-
     @Serializable
     data class LugarDetail(val lugarId: String) : Screen
 }

@@ -1,6 +1,5 @@
 package com.example.anibey_codex_tfg.ui.screens.profile
 
-import android.net.Uri
 
 data class ProfileState(
     val username: String = "",
