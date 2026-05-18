@@ -17,10 +17,14 @@ class LugaresViewModel @Inject constructor(
     private val db: FirebaseFirestore
 ) : ViewModel() {
 
+    // Se crea un flujo con los estados de carga
     private val _uiState = MutableStateFlow<LugaresStates>(LugaresStates.Loading)
+    // Con el StateFlow se puede observar el estado de carga
     val uiState: StateFlow<LugaresStates> = _uiState.asStateFlow()
 
+    // Se crea un flujo para la búsqueda
     private val _searchQuery = MutableStateFlow("")
+    // Con el StateFlow se puede observar la búsqueda
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
     // Datos en memoria para filtrado

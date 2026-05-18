@@ -24,12 +24,15 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.anibey_codex_tfg.domain.model.Monstruo
+import com.example.anibey_codex_tfg.domain.model.NivelPeligro
+import com.example.anibey_codex_tfg.domain.model.nivelPeligro
 import com.example.anibey_codex_tfg.ui.common.FileUtils
 import com.example.anibey_codex_tfg.ui.common.component.CodexSearchBar
 import com.example.anibey_codex_tfg.ui.common.component.EmptyScreen
@@ -194,6 +197,13 @@ fun MonstruoVisualizer(modifier: Modifier = Modifier, monstruo: Monstruo?) {
         Spacer(modifier = Modifier.height(12.dp))
 
         monstruo?.let {
+            val colorNivel = when(it.nivelPeligro) {
+                NivelPeligro.BAJO -> Color(0xFF4FC3F7)
+                NivelPeligro.MEDIO -> Color(0xFFFFD54F)
+                NivelPeligro.ALTO -> Color(0xFFEF5350)
+                NivelPeligro.LEGENDARIO -> Color(0xFFAB47BC)
+            }
+            
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -203,9 +213,18 @@ fun MonstruoVisualizer(modifier: Modifier = Modifier, monstruo: Monstruo?) {
                     text = it.nombre.uppercase(),
                     color = PrimaryRed,
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Black
+                    fontWeight = FontWeight.Black,
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Text(text = "LVL ${it.nivelPeligro}", color = GoldAccent, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "NIVEL ${it.nivel}", 
+                    color = colorNivel, 
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
             }
         }
     }
@@ -239,11 +258,14 @@ fun MonstruoSelectorList(modifier: Modifier = Modifier, monstruos: List<Monstruo
                     text = "${(index + 1).toString().padStart(3, '0')} - ${monstruo.nombre}",
                     color = if (isSelected) Color.White else Color.Gray,
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 if (isSelected) {
-                    Spacer(modifier = Modifier.weight(1f))
-                    Text(text = "▶", color = PrimaryRed, fontSize = 12.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "LVL ${monstruo.nivel}", color = GoldAccent, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                 }
             }
             HorizontalDivider(color = Color.DarkGray.copy(alpha = 0.2f), thickness = 0.5.dp)
@@ -288,9 +310,25 @@ fun SearchMonstruoCard(monstruo: Monstruo, onClick: () -> Unit) {
                     contentScale = ContentScale.Crop
                 )
             }
-            Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = monstruo.nombre, color = Color.White, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, maxLines = 1, textAlign = TextAlign.Center)
-                Text(text = monstruo.categoria, color = GoldAccent, style = MaterialTheme.typography.labelSmall)
+            Column(
+                modifier = Modifier.padding(8.dp).fillMaxWidth(), 
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = monstruo.nombre, 
+                    color = Color.White, 
+                    style = MaterialTheme.typography.labelLarge, 
+                    fontWeight = FontWeight.Bold, 
+                    maxLines = 1, 
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = "Nivel ${monstruo.nivel}", 
+                    color = GoldAccent, 
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1
+                )
             }
         }
     }

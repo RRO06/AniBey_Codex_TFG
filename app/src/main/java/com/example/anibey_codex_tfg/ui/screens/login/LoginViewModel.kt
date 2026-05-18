@@ -24,7 +24,6 @@ class LoginViewModel @Inject constructor(
     var state by mutableStateOf(LoginState())
         private set
 
-    // --- MANEJO DE INPUTS ---
 
     fun onEmailChange(newValue: String) {
         state = state.copy(email = newValue, emailError = null)
@@ -42,7 +41,6 @@ class LoginViewModel @Inject constructor(
         )
     }
 
-    // --- LÓGICA DE AUTENTICACIÓN ---
 
     /**
      * Intenta iniciar sesión con Email y Contraseña.
@@ -89,7 +87,6 @@ class LoginViewModel @Inject constructor(
             }
     }
 
-    // --- FUNCIONES DE APOYO ---
 
     private fun validateLoginForm(): Boolean {
         val isEmailValid = android.util.Patterns.EMAIL_ADDRESS.matcher(state.email).matches()

@@ -42,7 +42,9 @@ fun LugaresScreen(
     onBackClick: () -> Unit = {},
     onLugarClick: (String) -> Unit = {}
 ) {
+    // Se observa de forma constate el estado de carga
     val uiState by viewModel.uiState.collectAsState()
+    // Se observa de forma continua la query de búsqueda
     val searchQuery by viewModel.searchQuery.collectAsState()
 
     Scaffold(

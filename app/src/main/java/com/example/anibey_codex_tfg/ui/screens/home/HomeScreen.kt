@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
@@ -156,7 +157,7 @@ fun HomeDrawerContent(
                 onNavigateToLugares()
             })
 
-            DrawerItem("BESTIARIO", Icons.Default.Warning, onClick = {
+            DrawerItem("BESTIARIO", Icons.Default.Pets, onClick = {
                 closeDrawer()
                 onNavigateToBestiario()
             })

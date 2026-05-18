@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.anibey_codex_tfg.domain.model.Monstruo
+import com.example.anibey_codex_tfg.domain.model.NivelPeligro
+import com.example.anibey_codex_tfg.domain.model.nivelPeligro
 import com.example.anibey_codex_tfg.ui.common.FileUtils
 import com.example.anibey_codex_tfg.ui.common.component.ErrorScreen
 import com.example.anibey_codex_tfg.ui.common.component.LoadingScreen
@@ -99,8 +101,7 @@ fun MonstruoDetailContent(
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
-                
-                // Degradado para que el texto sea legible y se funda con el fondo
+
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -112,9 +113,9 @@ fun MonstruoDetailContent(
                         )
                 )
 
-                // Etiqueta de Nivel de Peligro flotante
+                // Etiqueta de Nivel con color según peligro
                 DangerBadge(
-                    level = monstruo.nivelPeligro,
+                    monstruo = monstruo,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(24.dp)
@@ -169,7 +170,7 @@ fun MonstruoDetailContent(
                 )
             }
 
-            // Habilidades y Debilidades (Dos columnas o vertical)
+            // Habilidades y Debilidades
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -189,20 +190,6 @@ fun MonstruoDetailContent(
                     modifier = Modifier.weight(1f)
                 )
             }
-
-            Spacer(modifier = Modifier.height(48.dp))
-            
-            // Pie de página "Digital"
-            Text(
-                text = "CODEX ANIBEY - VERSIÓN 1.0.4\nREGISTRO DE PROPIEDAD DE LA HERMANDAD",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .alpha(0.3f)
-                    .padding(bottom = 32.dp),
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.White
-            )
         }
     }
 }
@@ -276,13 +263,20 @@ fun ListCard(
 }
 
 @Composable
-fun DangerBadge(level: String, modifier: Modifier = Modifier) {
+fun DangerBadge(monstruo: Monstruo, modifier: Modifier = Modifier) {
+    val dangerColor = when (monstruo.nivelPeligro) {
+        NivelPeligro.BAJO -> Color(0xFF4FC3F7) // Azul claro / Cian
+        NivelPeligro.MEDIO -> Color(0xFFFFD54F) // Dorado / Ámbar
+        NivelPeligro.ALTO -> Color(0xFFEF5350) // Rojo suave
+        NivelPeligro.LEGENDARIO -> Color(0xFFAB47BC) // Púrpura / Legendario
+    }
+
     Box(
         modifier = modifier
             .drawBehind {
                 val pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
                 drawRect(
-                    color = PrimaryRed,
+                    color = dangerColor,
                     style = Stroke(width = 2.dp.toPx(), pathEffect = pathEffect)
                 )
             }
@@ -291,15 +285,15 @@ fun DangerBadge(level: String, modifier: Modifier = Modifier) {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                "NIVEL DE PELIGRO",
+                text = monstruo.nivelPeligro.name,
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = 0.7f)
+                color = dangerColor.copy(alpha = 0.8f)
             )
             Text(
-                text = level,
+                text = "NIVEL ${monstruo.nivel}",
                 style = MaterialTheme.typography.headlineSmall.copy(
                     fontWeight = FontWeight.Black,
-                    color = PrimaryRed
+                    color = Color.White
                 )
             )
         }
@@ -311,13 +305,13 @@ fun DangerBadge(level: String, modifier: Modifier = Modifier) {
 fun MonstruoDetailPreview() {
     val mock = Monstruo(
         id = "M-999",
-        nombre = "Sombra del Vacío",
-        descripcion = "Una entidad que no pertenece a este plano. Se dice que aparece cuando la luz de la luna es tapada por nubes de ceniza. Aquellos que la ven pierden la capacidad de hablar.",
-        categoria = "Espectro de Clase V",
-        nivelPeligro = "S+",
-        habitat = "Dimensiones Fracturadas",
-        habilidades = listOf("Invisibilidad", "Drenaje de Alma", "Grito Silencioso"),
-        debilidades = listOf("Luz de Altar", "Plata Pura")
+        nombre = "Sierpe Mayor",
+        descripcion = "Una colosal criatura que habita en las profundidades de las montañas. Su mera presencia altera el clima de la región.",
+        categoria = "Dragón Ancestral",
+        nivel = 8,
+        habitat = "Cumbres de Tiembla",
+        habilidades = listOf("Aliento Ígneo", "Piel de Diamante"),
+        debilidades = listOf("Frío Absoluto")
     )
     MonstruoDetailContent(monstruo = mock, onBackClick = {})
 }
