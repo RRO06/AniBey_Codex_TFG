@@ -20,6 +20,7 @@ import com.example.anibey_codex_tfg.ui.screens.register.RegisterScreen
 import com.example.anibey_codex_tfg.ui.screens.lugares.LugaresScreen
 import com.example.anibey_codex_tfg.ui.screens.lugares.lugares_detail.LugarDetailScreen
 import com.example.anibey_codex_tfg.ui.screens.bestiario.BestiarioScreen
+import com.example.anibey_codex_tfg.ui.screens.bestiario.monstruo_detail.MonstruoDetailScreen
 import com.example.anibey_codex_tfg.ui.welcome.ui.WelcomeScreen
 
 @Composable
@@ -139,7 +140,8 @@ fun AnimaNavHost(
         composable<Screen.Bestiario> {
             BestiarioScreen(
                 viewModel = hiltViewModel(),
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() },
+                onMonstruoClick = { id -> navController.navigate(Screen.MonstruoDetail(id)) }
             )
         }
 
@@ -147,6 +149,15 @@ fun AnimaNavHost(
             val detail = backStackEntry.toRoute<Screen.LugarDetail>()
             LugarDetailScreen(
                 lugarId = detail.lugarId,
+                viewModel = hiltViewModel(),
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable<Screen.MonstruoDetail> { backStackEntry ->
+            val detail = backStackEntry.toRoute<Screen.MonstruoDetail>()
+            MonstruoDetailScreen(
+                monstruoId = detail.monstruoId,
                 viewModel = hiltViewModel(),
                 onBackClick = { navController.popBackStack() }
             )

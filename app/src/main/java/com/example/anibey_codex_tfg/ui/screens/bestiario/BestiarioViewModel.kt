@@ -38,23 +38,9 @@ class BestiarioViewModel @Inject constructor(
                     .addOnSuccessListener { documents ->
                         val lista = documents.mapNotNull { doc ->
                             try {
-                                @Suppress("UNCHECKED_CAST")
-                                val habilidades = doc.get("habilidades") as? List<String> ?: emptyList()
-                                @Suppress("UNCHECKED_CAST")
-                                val debilidades = doc.get("debilidades") as? List<String> ?: emptyList()
-
-                                Monstruo(
-                                    id = doc.id,
-                                    nombre = doc.getString("nombre") ?: "",
-                                    descripcion = doc.getString("descripcion") ?: "",
-                                    categoria = doc.getString("categoria") ?: "",
-                                    nivelPeligro = doc.getString("nivelPeligro") ?: "",
-                                    habitat = doc.getString("habitat") ?: "",
-                                    imagenURL = doc.getString("imagenURL") ?: "",
-                                    habilidades = habilidades,
-                                    debilidades = debilidades
-                                )
+                                doc.toObject(Monstruo::class.java).copy(id = doc.id)
                             } catch (e: Exception) {
+                                Log.e("BestiarioViewModel", "Error al convertir documento: ${e.message}")
                                 null
                             }
                         }
@@ -62,6 +48,7 @@ class BestiarioViewModel @Inject constructor(
                         actualizarEstado()
                     }
                     .addOnFailureListener { exception ->
+                        Log.e("BestiarioViewModel", "Error Firestore: ${exception.message}")
                         _uiState.value = BestiarioStates.Error("Error: ${exception.message}")
                     }
             } catch (e: Exception) {
@@ -80,13 +67,15 @@ class BestiarioViewModel @Inject constructor(
         val filtrados = if (query.isEmpty()) {
             allMonstruos
         } else {
-            allMonstruos.filter { it.nombre.lowercase().contains(query) }
+            allMonstruos.filter { 
+                it.nombre.lowercase().contains(query) || 
+                it.categoria.lowercase().contains(query) 
+            }
         }
 
-        _uiState.value = if (allMonstruos.isEmpty()) {
-            BestiarioStates.Empty
-        } else {
-            BestiarioStates.Success(filtrados)
+        _uiState.value = when {
+            allMonstruos.isEmpty() -> BestiarioStates.Empty
+            else -> BestiarioStates.Success(filtrados)
         }
     }
 }
