@@ -2,6 +2,7 @@ package com.example.anibey_codex_tfg.ui.common
 
 import android.content.Context
 import android.util.Log
+import androidx.compose.ui.graphics.Color
 import coil.imageLoader
 import coil.request.ImageRequest
 
@@ -38,6 +39,23 @@ object FileUtils {
                 .data(formatDriveUrl(url, 400)) // Pre-carga versiones pequeñas para la lista
                 .build()
             imageLoader.enqueue(request)
+        }
+    }
+
+    fun getRamaColor(rama: String): Color {
+        return when (rama.trim().uppercase()) {
+            "FUEGO" -> Color(0xFFFF5722)
+            "AGUA" -> Color(0xFF03A9F4)
+            "AIRE" -> Color(0xFF00BCD4)
+            "TIERRA" -> Color(0xFF795548)
+            "LUZ" -> Color(0xFFFFD600)
+            "OSCURIDAD" -> Color(0xFF673AB7)
+            "CREACION" -> Color(0xFFE0E0E0)
+            "DESTRUCCION" -> Color(0xFFB71C1C)
+            "ESENCIA" -> Color(0xFFE91E63)
+            "ILUSION" -> Color(0xFF009688)
+            "NIGROMANCIA" -> Color(0xFF4CAF50)
+            else -> Color(0xFF90A4AE)
         }
     }
 }

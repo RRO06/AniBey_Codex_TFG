@@ -13,21 +13,23 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.Place
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -89,6 +91,7 @@ fun HomeScreen(
     onNavigateToRegister: () -> Unit = {},
     onNavigateToLugares: () -> Unit = {},
     onNavigateToBestiario: () -> Unit = {},
+    onNavigateToGrimorio: () -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -104,6 +107,7 @@ fun HomeScreen(
                 onNavigateToProfile = onNavigateToProfile,
                 onNavigateToLugares = onNavigateToLugares,
                 onNavigateToBestiario = onNavigateToBestiario,
+                onNavigateToGrimorio = onNavigateToGrimorio,
                 onLogout = {
                     viewModel.logout { onLogout() }
                 },
@@ -120,7 +124,11 @@ fun HomeScreen(
                 if (isGuest || userProfile == null) {
                     GuestHomeContent(onNavigateToLogin, onNavigateToRegister)
                 } else {
-                    AuthenticatedHomeContent(userProfile, onNavigateToProfile)
+                    AuthenticatedHomeContent(
+                        userProfile = userProfile,
+                        onNavigateToProfile = onNavigateToProfile,
+                        onNavigateToGrimorio = onNavigateToGrimorio
+                    )
                 }
             }
         }
@@ -133,12 +141,15 @@ fun HomeDrawerContent(
     onNavigateToProfile: () -> Unit,
     onNavigateToLugares: () -> Unit,
     onNavigateToBestiario: () -> Unit,
+    onNavigateToGrimorio: () -> Unit,
     onLogout: () -> Unit,
     closeDrawer: () -> Unit
 ) {
-    ModalDrawerSheet{
+    ModalDrawerSheet {
         Column(
-            modifier = Modifier.fillMaxSize().padding(24.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp)
         ) {
             Text(
                 text = "ANIBEY CODEX",
@@ -151,7 +162,6 @@ fun HomeDrawerContent(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Sección común para ambos modos
             DrawerItem("LUGARES", Icons.Default.Place, onClick = {
                 closeDrawer()
                 onNavigateToLugares()
@@ -162,7 +172,11 @@ fun HomeDrawerContent(
                 onNavigateToBestiario()
             })
 
-            // Solo mostrar perfil si no es invitado
+            DrawerItem("GRIMORIO", Icons.Default.AutoStories, onClick = {
+                closeDrawer()
+                onNavigateToGrimorio()
+            })
+
             if (!isGuest) {
                 DrawerItem("PERFIL DE ALMA", Icons.Default.Person, onClick = {
                     closeDrawer()
@@ -310,8 +324,8 @@ private fun GuestHomeContent(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        "INICIAR SESIÓN", 
-                        color = Color.White, 
+                        "INICIAR SESIÓN",
+                        color = Color.White,
                         style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 2.sp)
                     )
                 }
@@ -323,7 +337,8 @@ private fun GuestHomeContent(
 @Composable
 private fun AuthenticatedHomeContent(
     userProfile: UserProfile?,
-    onNavigateToProfile: () -> Unit
+    onNavigateToProfile: () -> Unit,
+    onNavigateToGrimorio: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
 
@@ -344,7 +359,9 @@ private fun AuthenticatedHomeContent(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp)
     ) {
         Box(contentAlignment = Alignment.Center) {
             Box(
@@ -401,12 +418,65 @@ private fun AuthenticatedHomeContent(
             textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // Card de Estado del Grimorio
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onNavigateToGrimorio() },
+            colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.7f)),
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.dp, PrimaryRed.copy(alpha = 0.4f))
+        ) {
+            Row(
+                modifier = Modifier.padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AutoStories,
+                    contentDescription = null,
+                    tint = PrimaryRed,
+                    modifier = Modifier.size(40.dp)
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    val hechizosCount = userProfile?.grimorio?.size ?: 0
+                    Text(
+                        text = "TU GRIMORIO",
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                    Text(
+                        text = when (hechizosCount) {
+                            0 -> ""
+                            1 -> "1 hechizo imbuido"
+                            else -> "$hechizosCount hechizos imbuidos"
+                        },
+                        color = Color.Gray,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                    contentDescription = null,
+                    tint = Color.Gray,
+                    modifier = Modifier
+                        .size(20.dp)
+                        .scale(-1f, 1f) // Voltear para que parezca "entrar"
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         Text(
             text = "Tu esencia fluye en el Códice",
             style = MaterialTheme.typography.bodySmall.copy(
-                color = Color.White.copy(alpha = 0.5f),
+                color = Color.White.copy(alpha = 0.4f),
                 letterSpacing = 1.sp
             )
         )

@@ -21,6 +21,8 @@ import com.example.anibey_codex_tfg.ui.screens.lugares.LugaresScreen
 import com.example.anibey_codex_tfg.ui.screens.lugares.lugares_detail.LugarDetailScreen
 import com.example.anibey_codex_tfg.ui.screens.bestiario.BestiarioScreen
 import com.example.anibey_codex_tfg.ui.screens.bestiario.monstruo_detail.MonstruoDetailScreen
+import com.example.anibey_codex_tfg.ui.screens.biblioteca_hechizos.SpellDetailScreen
+import com.example.anibey_codex_tfg.ui.screens.biblioteca_hechizos.SpellListScreen
 import com.example.anibey_codex_tfg.ui.welcome.ui.WelcomeScreen
 
 @Composable
@@ -107,6 +109,7 @@ fun AnimaNavHost(
                 onNavigateToRegister = { navController.navigate(Screen.Register) },
                 onNavigateToLugares = { navController.navigate(Screen.Lugares) },
                 onNavigateToBestiario = { navController.navigate(Screen.Bestiario) },
+                onNavigateToGrimorio = { navController.navigate(Screen.Grimorio) },
                 onLogout = {
                     navController.navigate(Screen.Welcome) {
                         popUpTo(Screen.Home) { inclusive = true }
@@ -145,6 +148,14 @@ fun AnimaNavHost(
             )
         }
 
+        composable<Screen.Grimorio> {
+            SpellListScreen(
+                onNavigateToDetail = { id -> navController.navigate(Screen.HechizoDetail(id)) },
+                viewModel = hiltViewModel(),
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
         composable<Screen.LugarDetail> { backStackEntry ->
             val detail = backStackEntry.toRoute<Screen.LugarDetail>()
             LugarDetailScreen(
@@ -159,6 +170,14 @@ fun AnimaNavHost(
             MonstruoDetailScreen(
                 monstruoId = detail.monstruoId,
                 viewModel = hiltViewModel(),
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable<Screen.HechizoDetail> { backStackEntry ->
+            val detail = backStackEntry.toRoute<Screen.HechizoDetail>()
+            SpellDetailScreen(
+                spellId = detail.spellId,
                 onBackClick = { navController.popBackStack() }
             )
         }

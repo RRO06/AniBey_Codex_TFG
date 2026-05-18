@@ -16,8 +16,14 @@ sealed interface Screen {
     @Serializable
     data object Bestiario : Screen
     @Serializable
+    data object Grimorio : Screen // Nueva sección
+
+    @Serializable
     data class LugarDetail(val lugarId: String) : Screen
 
     @Serializable
     data class MonstruoDetail(val monstruoId: String) : Screen
+
+    @Serializable
+    data class HechizoDetail(val spellId: String) : Screen // Detalle de hechizo
 }
