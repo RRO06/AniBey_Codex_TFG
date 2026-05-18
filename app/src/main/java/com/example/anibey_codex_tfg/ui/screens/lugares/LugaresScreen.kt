@@ -85,7 +85,6 @@ fun LugaresScreenContent(
         Column(modifier = Modifier.fillMaxSize()) {
             CodexSearchBar(
                 searchQuery = searchQuery,
-                onSearchQueryChange = onSearchQueryChange
                 onSearchQueryChange = onSearchQueryChange,
                 hint = "Buscar lugares..."
             )

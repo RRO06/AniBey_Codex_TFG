@@ -66,7 +66,6 @@ class LugaresViewModel @Inject constructor(
         return if (query.isEmpty()) {
             allLugares
         } else {
-            // Filtrar SOLO por nombre como has pedido
             allLugares.filter { lugar ->
                 lugar.nombre.lowercase().startsWith(query)
             }
