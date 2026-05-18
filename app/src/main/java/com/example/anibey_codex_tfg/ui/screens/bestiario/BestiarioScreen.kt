@@ -31,12 +31,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.anibey_codex_tfg.domain.model.Monstruo
 import com.example.anibey_codex_tfg.ui.common.FileUtils
+import com.example.anibey_codex_tfg.ui.common.component.CodexSearchBar
 import com.example.anibey_codex_tfg.ui.common.component.EmptyScreen
 import com.example.anibey_codex_tfg.ui.common.component.ErrorScreen
 import com.example.anibey_codex_tfg.ui.common.component.LoadingScreen
 import com.example.anibey_codex_tfg.ui.common.theme.GoldAccent
 import com.example.anibey_codex_tfg.ui.common.theme.PrimaryRed
-import com.example.anibey_codex_tfg.ui.screens.lugares.LugaresSearchBar
 
 @Composable
 fun BestiarioScreen(
@@ -99,9 +99,10 @@ fun BestiarioContent(
                 .padding(padding)
                 .background(Color(0xFF050505))
         ) {
-            LugaresSearchBar(
+            CodexSearchBar(
                 searchQuery = searchQuery,
-                onSearchQueryChange = onSearchQueryChange
+                onSearchQueryChange = onSearchQueryChange,
+                hint = "Buscar en el bestiario..."
             )
 
             Box(modifier = Modifier.weight(1f)) {
@@ -299,4 +300,3 @@ fun SearchMonstruoCard(monstruo: Monstruo, onClick: () -> Unit) {
 fun BestiarioScreenPreview() {
     BestiarioScreen(onBackClick = {}, onMonstruoClick = {})
 }
-

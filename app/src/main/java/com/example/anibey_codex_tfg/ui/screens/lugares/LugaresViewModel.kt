@@ -67,7 +67,7 @@ class LugaresViewModel @Inject constructor(
             allLugares
         } else {
             allLugares.filter { lugar ->
-                lugar.nombre.lowercase().contains(query)
+                lugar.nombre.lowercase().startsWith(query)
             }
         }
     }

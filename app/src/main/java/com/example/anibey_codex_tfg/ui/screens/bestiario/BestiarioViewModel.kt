@@ -68,8 +68,8 @@ class BestiarioViewModel @Inject constructor(
             allMonstruos
         } else {
             allMonstruos.filter { 
-                it.nombre.lowercase().contains(query) || 
-                it.categoria.lowercase().contains(query) 
+                it.nombre.lowercase().startsWith(query) || 
+                it.categoria.lowercase().startsWith(query)
             }
         }
 

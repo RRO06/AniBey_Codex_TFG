@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.anibey_codex_tfg.R
 import com.example.anibey_codex_tfg.domain.model.Lugar
+import com.example.anibey_codex_tfg.ui.common.component.CodexSearchBar
 import com.example.anibey_codex_tfg.ui.common.component.EmptyScreen
 import com.example.anibey_codex_tfg.ui.common.component.ErrorScreen
 import com.example.anibey_codex_tfg.ui.common.component.LoadingScreen
@@ -82,9 +83,10 @@ fun LugaresScreenContent(
             )
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            LugaresSearchBar(
+            CodexSearchBar(
                 searchQuery = searchQuery,
-                onSearchQueryChange = onSearchQueryChange
+                onSearchQueryChange = onSearchQueryChange,
+                hint = "Buscar lugares..."
             )
 
             // Mostrar el estado correspondiente
