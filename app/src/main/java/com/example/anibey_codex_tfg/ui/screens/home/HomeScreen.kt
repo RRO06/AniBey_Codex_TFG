@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AutoStories
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Pets
@@ -71,18 +72,31 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
 import com.example.anibey_codex_tfg.R
 import com.example.anibey_codex_tfg.domain.model.UserProfile
+import com.example.anibey_codex_tfg.ui.common.component.AnimaToast
 import com.example.anibey_codex_tfg.ui.common.theme.PrimaryRed
 import com.example.anibey_codex_tfg.ui.common.theme.SoftGray
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+data class HomeActions(
+    val onNavigateToProfile: () -> Unit = {},
+    val onNavigateToLogin: () -> Unit = {},
+    val onNavigateToRegister: () -> Unit = {},
+    val onNavigateToLugares: () -> Unit = {},
+    val onNavigateToBestiario: () -> Unit = {},
+    val onNavigateToGrimorio: () -> Unit = {},
+    val onLogout: () -> Unit = {},
+    val onBlockedFeatureClick: (String) -> Unit = {},
+    val onDismissToast: () -> Unit = {}
+)
+
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
@@ -94,55 +108,81 @@ fun HomeScreen(
     onNavigateToGrimorio: () -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+    
+    val actions = remember(viewModel) {
+        HomeActions(
+            onNavigateToProfile = onNavigateToProfile,
+            onNavigateToLogin = onNavigateToLogin,
+            onNavigateToRegister = onNavigateToRegister,
+            onNavigateToLugares = onNavigateToLugares,
+            onNavigateToBestiario = onNavigateToBestiario,
+            onNavigateToGrimorio = onNavigateToGrimorio,
+            onLogout = { viewModel.logout(onLogout) },
+            onBlockedFeatureClick = viewModel::onBlockedFeatureClick,
+            onDismissToast = viewModel::dismissToast
+        )
+    }
+
+    HomeContent(uiState = uiState, actions = actions)
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeContent(
+    uiState: HomeUiState,
+    actions: HomeActions
+) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    val userProfile by viewModel.userProfile.collectAsState(initial = null)
-    val isGuest by viewModel.isGuest.collectAsState(initial = false)
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            HomeDrawerContent(
-                isGuest = isGuest,
-                onNavigateToProfile = onNavigateToProfile,
-                onNavigateToLugares = onNavigateToLugares,
-                onNavigateToBestiario = onNavigateToBestiario,
-                onNavigateToGrimorio = onNavigateToGrimorio,
-                onLogout = {
-                    viewModel.logout { onLogout() }
-                },
-                closeDrawer = { scope.launch { drawerState.close() } }
-            )
-        }
-    ) {
-        Scaffold(
-            topBar = {
-                HomeTopBar(onMenuClick = { scope.launch { drawerState.open() } })
+    // Box raíz para asegurar que el Toast siempre esté en la capa superior
+    Box(modifier = Modifier.fillMaxSize()) {
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            drawerContent = {
+                HomeDrawerContent(
+                    uiState = uiState,
+                    actions = actions,
+                    closeDrawer = { scope.launch { drawerState.close() } }
+                )
             }
-        ) { padding ->
-            MainBackgroundWrapper(padding) {
-                if (isGuest || userProfile == null) {
-                    GuestHomeContent(onNavigateToLogin, onNavigateToRegister)
-                } else {
-                    AuthenticatedHomeContent(
-                        userProfile = userProfile,
-                        onNavigateToProfile = onNavigateToProfile,
-                        onNavigateToGrimorio = onNavigateToGrimorio
-                    )
+        ) {
+            Scaffold(
+                topBar = {
+                    HomeTopBar(onMenuClick = { scope.launch { drawerState.open() } })
+                }
+            ) { padding ->
+                MainBackgroundWrapper(padding) {
+                    if (uiState.isGuest || uiState.userProfile == null) {
+                        GuestHomeContent(
+                            onNavigateToLogin = actions.onNavigateToLogin,
+                            onNavigateToRegister = actions.onNavigateToRegister
+                        )
+                    } else {
+                        AuthenticatedHomeContent(
+                            userProfile = uiState.userProfile,
+                            onNavigateToProfile = actions.onNavigateToProfile,
+                            onNavigateToGrimorio = actions.onNavigateToGrimorio
+                        )
+                    }
                 }
             }
         }
+
+        AnimaToast(
+            show = uiState.toastMessage != null,
+            message = uiState.toastMessage ?: "",
+            onDismiss = actions.onDismissToast
+        )
     }
 }
 
 @Composable
 fun HomeDrawerContent(
-    isGuest: Boolean,
-    onNavigateToProfile: () -> Unit,
-    onNavigateToLugares: () -> Unit,
-    onNavigateToBestiario: () -> Unit,
-    onNavigateToGrimorio: () -> Unit,
-    onLogout: () -> Unit,
+    uiState: HomeUiState,
+    actions: HomeActions,
     closeDrawer: () -> Unit
 ) {
     ModalDrawerSheet {
@@ -164,35 +204,51 @@ fun HomeDrawerContent(
 
             DrawerItem("LUGARES", Icons.Default.Place, onClick = {
                 closeDrawer()
-                onNavigateToLugares()
+                actions.onNavigateToLugares()
             })
 
             DrawerItem("BESTIARIO", Icons.Default.Pets, onClick = {
                 closeDrawer()
-                onNavigateToBestiario()
+                actions.onNavigateToBestiario()
             })
 
-            DrawerItem("GRIMORIO", Icons.Default.AutoStories, onClick = {
-                closeDrawer()
-                onNavigateToGrimorio()
-            })
-
-            if (!isGuest) {
-                DrawerItem("PERFIL DE ALMA", Icons.Default.Person, onClick = {
-                    closeDrawer()
-                    onNavigateToProfile()
-                })
-            }
+            DrawerItem(
+                label = "PERFIL DE ALMA",
+                icon = Icons.Default.Person,
+                enabled = !uiState.isGuest,
+                onClick = {
+                    if (uiState.isGuest) {
+                        actions.onBlockedFeatureClick("Debes iniciar sesión para acceder al Perfil de Alma.")
+                    } else {
+                        closeDrawer()
+                        actions.onNavigateToProfile()
+                    }
+                }
+            )
 
             Spacer(modifier = Modifier.weight(1f))
 
             DrawerItem(
-                label = if (isGuest) "VOLVER AL INICIO" else "DESVANECER (LOGOUT)",
+                label = "GRIMORIO",
+                icon = Icons.Default.AutoStories,
+                enabled = !uiState.isGuest,
+                onClick = {
+                    if (uiState.isGuest) {
+                        actions.onBlockedFeatureClick("El Grimorio solo se revela ante usuarios registrados.")
+                    } else {
+                        closeDrawer()
+                        actions.onNavigateToGrimorio()
+                    }
+                }
+            )
+
+            DrawerItem(
+                label = if (uiState.isGuest) "VOLVER AL INICIO" else "DESVANECER (LOGOUT)",
                 icon = Icons.AutoMirrored.Filled.ExitToApp,
                 color = PrimaryRed,
                 onClick = {
                     closeDrawer()
-                    onLogout()
+                    actions.onLogout()
                 }
             )
         }
@@ -204,11 +260,27 @@ fun DrawerItem(
     label: String,
     icon: ImageVector? = null,
     color: Color = SoftGray,
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
+    val displayColor = if (enabled) color else color.copy(alpha = 0.3f)
+
     NavigationDrawerItem(
-        label = { Text(label, color = color, fontWeight = FontWeight.Medium) },
-        icon = icon?.let { { Icon(it, contentDescription = null, tint = color) } },
+        label = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(label, color = displayColor, fontWeight = FontWeight.Medium)
+                if (!enabled) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = "Bloqueado",
+                        tint = displayColor,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+        },
+        icon = icon?.let { { Icon(it, contentDescription = null, tint = displayColor) } },
         selected = false,
         onClick = onClick,
         colors = NavigationDrawerItemDefaults.colors(
@@ -340,22 +412,6 @@ private fun AuthenticatedHomeContent(
     onNavigateToProfile: () -> Unit,
     onNavigateToGrimorio: () -> Unit
 ) {
-    val scope = rememberCoroutineScope()
-
-    val imageData = remember(userProfile?.photoUrl) {
-        val url = userProfile?.photoUrl
-        if (url != null && !url.startsWith("http")) {
-            try {
-                val decodedString = Base64.decode(url, Base64.DEFAULT)
-                BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
-            } catch (_: Exception) {
-                null
-            }
-        } else {
-            url
-        }
-    }
-
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -363,122 +419,159 @@ private fun AuthenticatedHomeContent(
             .fillMaxSize()
             .padding(24.dp)
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            Box(
-                modifier = Modifier
-                    .size(170.dp)
-                    .background(
-                        brush = Brush.radialGradient(
-                            colors = listOf(PrimaryRed.copy(alpha = 0.3f), Color.Transparent)
-                        ),
-                        shape = CircleShape
-                    )
-            )
-
-            var isAnimating by remember { mutableStateOf(false) }
-            val scale by animateFloatAsState(
-                targetValue = if (isAnimating) 1.15f else 1f,
-                animationSpec = tween(durationMillis = 300)
-            )
-
-            Image(
-                painter = rememberAsyncImagePainter(
-                    model = imageData ?: R.drawable.default_avatar,
-                    placeholder = painterResource(R.drawable.default_avatar),
-                    error = painterResource(R.drawable.default_avatar)
-                ),
-                contentDescription = "Foto de perfil",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(150.dp)
-                    .clip(CircleShape)
-                    .border(2.dp, PrimaryRed.copy(alpha = 0.6f), CircleShape)
-                    .scale(scale)
-                    .clickable {
-                        isAnimating = true
-                        scope.launch {
-                            delay(300)
-                            onNavigateToProfile()
-                            isAnimating = false
-                        }
-                    }
-            )
-        }
+        ProfileImageHeader(
+            photoUrl = userProfile?.photoUrl,
+            onProfileClick = onNavigateToProfile
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Text(
-            text = "SALUDOS, ${userProfile?.username?.uppercase() ?: "VIAJERO"}",
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Black,
-                letterSpacing = 2.sp,
-                shadow = Shadow(color = Color.Black, blurRadius = 8f)
-            ),
-            color = Color.White,
-            textAlign = TextAlign.Center
-        )
+        BienvenidaSeccion(username = userProfile?.username)
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Card de Estado del Grimorio
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onNavigateToGrimorio() },
-            colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.7f)),
-            shape = RoundedCornerShape(16.dp),
-            border = BorderStroke(1.dp, PrimaryRed.copy(alpha = 0.4f))
-        ) {
-            Row(
-                modifier = Modifier.padding(20.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AutoStories,
-                    contentDescription = null,
-                    tint = PrimaryRed,
-                    modifier = Modifier.size(40.dp)
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                Column {
-                    val hechizosCount = userProfile?.grimorio?.size ?: 0
-                    Text(
-                        text = "TU GRIMORIO",
-                        color = Color.White,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    )
-                    Text(
-                        text = when (hechizosCount) {
-                            0 -> ""
-                            1 -> "1 hechizo imbuido"
-                            else -> "$hechizosCount hechizos imbuidos"
-                        },
-                        color = Color.Gray,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-                Spacer(modifier = Modifier.weight(1f))
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                    contentDescription = null,
-                    tint = Color.Gray,
-                    modifier = Modifier
-                        .size(20.dp)
-                        .scale(-1f, 1f) // Voltear para que parezca "entrar"
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = "Tu esencia fluye en el Códice",
-            style = MaterialTheme.typography.bodySmall.copy(
-                color = Color.White.copy(alpha = 0.4f),
-                letterSpacing = 1.sp
-            )
+        GrimorioCard(
+            hechizosCount = userProfile?.grimorio?.size ?: 0,
+            onClick = onNavigateToGrimorio
         )
     }
+}
+
+// Si la foto es un link de internet, lo deja pasar.
+// Si es un código en Base64 porque viene de la galería, lo convierte en imagen real.
+// Así el componente no falla y acepta cualquier tipo de foto que le llegue.
+@Composable
+private fun ProfileImageHeader(
+    photoUrl: String?,
+    onProfileClick: () -> Unit
+) {
+    val scope = rememberCoroutineScope()
+    val imageData = remember(photoUrl) {
+        if (photoUrl != null && !photoUrl.startsWith("http")) {
+            try {
+                val decodedString = Base64.decode(photoUrl, Base64.DEFAULT)
+                BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
+            } catch (_: Exception) { null }
+        } else photoUrl
+    }
+
+    Box(contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier
+                .size(170.dp)
+                .background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(PrimaryRed.copy(alpha = 0.3f), Color.Transparent)
+                    ),
+                    shape = CircleShape
+                )
+        )
+
+        var isAnimating by remember { mutableStateOf(false) }
+        val scale by animateFloatAsState(
+            targetValue = if (isAnimating) 1.3f else 1f,
+            animationSpec = tween(durationMillis = 500)
+        )
+
+        Image(
+            painter = rememberAsyncImagePainter(
+                model = imageData ?: R.drawable.default_avatar,
+                placeholder = painterResource(R.drawable.default_avatar),
+                error = painterResource(R.drawable.default_avatar)
+            ),
+            contentDescription = "Foto de perfil",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(150.dp)
+                .clip(CircleShape)
+                .border(2.dp, PrimaryRed.copy(alpha = 0.6f), CircleShape)
+                .scale(scale)
+                .clickable {
+                    isAnimating = true
+                    scope.launch {
+                        delay(300)
+                        onProfileClick()
+                        isAnimating = false
+                    }
+                }
+        )
+    }
+}
+
+@Composable
+private fun BienvenidaSeccion(username: String?) {
+    Text(
+        text = "SALUDOS, ${username?.uppercase() ?: "VIAJERO"}",
+        style = MaterialTheme.typography.headlineSmall.copy(
+            fontWeight = FontWeight.Black,
+            letterSpacing = 2.sp,
+            shadow = Shadow(color = Color.Black, blurRadius = 8f)
+        ),
+        color = Color.White,
+        textAlign = TextAlign.Center
+    )
+}
+
+@Composable
+private fun GrimorioCard(
+    hechizosCount: Int,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.7f)),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, PrimaryRed.copy(alpha = 0.4f))
+    ) {
+        Row(
+            modifier = Modifier.padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.AutoStories,
+                contentDescription = null,
+                tint = PrimaryRed,
+                modifier = Modifier.size(40.dp)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Text(
+                    text = "TU GRIMORIO",
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+                Text(
+                    text = when (hechizosCount) {
+                        0 -> ""
+                        1 -> "1 hechizo imbuido"
+                        else -> "$hechizosCount hechizos imbuidos"
+                    },
+                    color = Color.Gray,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                contentDescription = null,
+                tint = Color.Gray,
+                modifier = Modifier
+                    .size(20.dp)
+                    .scale(-1f, 1f)
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun HomeContentPreview() {
+    HomeContent(
+        uiState = HomeUiState(isGuest = true, toastMessage = "Inicia sesión para ver tu perfil."),
+        actions = HomeActions()
+    )
 }
