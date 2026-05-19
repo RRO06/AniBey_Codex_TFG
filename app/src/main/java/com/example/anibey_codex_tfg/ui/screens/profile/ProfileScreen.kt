@@ -32,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.paint
@@ -43,7 +44,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.anibey_codex_tfg.R
@@ -62,9 +62,7 @@ data class ProfileActions(
     val uploadPhoto: (Uri) -> Unit = {},
     val onDeletePhoto: () -> Unit = {},
     val onDismissDiscardDialog: () -> Unit = {},
-    val onConfirmDiscard: () -> Unit = {},
-    val onDismissVerificationDialog: () -> Unit = {},
-    val onConfirmVerification: () -> Unit = {}
+    val onConfirmDiscard: () -> Unit = {}
 )
 
 @Composable
@@ -76,6 +74,12 @@ fun ProfileScreen(
 ) {
     val state = viewModel.state
 
+    LaunchedEffect(state.shouldNavigateToWelcome) {
+        if (state.shouldNavigateToWelcome) {
+            onLogout()
+        }
+    }
+
     BackHandler {
         viewModel.onBackRequested(onNavigateBack)
     }
@@ -86,7 +90,7 @@ fun ProfileScreen(
         onPasswordChange = viewModel::onPasswordChange,
         onCurrentPasswordChange = viewModel::onCurrentPasswordChange,
         onPhotoChange = viewModel::onPhotoChange,
-        onSave = viewModel::saveProfile,
+        onSave = { viewModel.saveProfile(onAutoLogout = onLogout) },
         onBack = { viewModel.onBackRequested(onNavigateBack) },
         uploadPhoto = viewModel::uploadPhoto,
         onDeletePhoto = { viewModel.onPhotoChange(null) },
@@ -94,17 +98,6 @@ fun ProfileScreen(
         onConfirmDiscard = {
             viewModel.onDismissDiscardDialog()
             onNavigateBack()
-        },
-        onDismissVerificationDialog = {
-            viewModel.onDismissVerificationDialog()
-        },
-        onConfirmVerification = {
-            viewModel.onConfirmEmailVerification(
-                onSuccess = {
-                    viewModel.logout()
-                    onLogout()
-                }
-            )
         }
     )
 
@@ -131,7 +124,10 @@ fun ProfileContent(
     }
 
     DiscardChangesDialog(state, actions)
-    EmailVerificationDialog(state, actions)
+    
+    if (state.isCheckingEmailVerification) {
+        VerificationWaitingDialog()
+    }
 
     Box(
         modifier = modifier
@@ -175,9 +171,30 @@ fun ProfileContent(
             }
 
             SaveButton(state, actions)
-
         }
     }
+}
+
+@Composable
+private fun VerificationWaitingDialog() {
+    AlertDialog(
+        onDismissRequest = { },
+        title = { Text("VERIFICACIÓN EN CURSO", color = PrimaryRed) },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                CircularProgressIndicator(color = PrimaryRed)
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    "Pulsa el enlace de tu correo.\nEsta pantalla se cerrará sola al confirmar.",
+                    textAlign = TextAlign.Center,
+                    color = Color.White,
+                    fontSize = 14.sp
+                )
+            }
+        },
+        confirmButton = {},
+        containerColor = Color.Black.copy(alpha = 0.95f)
+    )
 }
 
 @Composable
@@ -186,7 +203,7 @@ private fun DiscardChangesDialog(state: ProfileState, actions: ProfileActions) {
         AlertDialog(
             onDismissRequest = actions.onDismissDiscardDialog,
             title = { Text("¿DESCARTAR CAMBIOS?") },
-            text = { Text("Tu esencia ha mutado pero no ha sido sellada. Si te retiras ahora, los cambios se desvanecerán en el vacío.") },
+            text = { Text("Si sales ahora, perderás las modificaciones no guardadas.") },
             confirmButton = {
                 TextButton(onClick = actions.onConfirmDiscard) {
                     Text("DESCARTAR", color = PrimaryRed)
@@ -205,85 +222,9 @@ private fun DiscardChangesDialog(state: ProfileState, actions: ProfileActions) {
 }
 
 @Composable
-private fun EmailVerificationDialog(state: ProfileState, actions: ProfileActions) {
-    if (state.showEmailVerificationDialog) {
-        AlertDialog(
-            onDismissRequest = { actions.onDismissVerificationDialog() },
-            title = { Text("VERIFICACIÓN DE CORREO REQUERIDA") },
-            text = {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Text(
-                        "Se ha enviado un enlace de verificación a tu nuevo correo.",
-                        textAlign = TextAlign.Center,
-                        fontSize = 14.sp
-                    )
-                    Text(
-                        "Por favor:",
-                        textAlign = TextAlign.Center,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
-                    )
-                    Text(
-                        "1. Abre tu correo\n2. Haz clic en el enlace de verificación\n3. Vuelve a esta pantalla\n4. Haz clic en CONFIRMADO",
-                        textAlign = TextAlign.Center,
-                        fontSize = 12.sp,
-                        color = Color.Yellow
-                    )
-
-                    // Mostrar mensaje de error si la verificación falló
-                    state.generalError?.let { error ->
-                        Text(
-                            text = error,
-                            textAlign = TextAlign.Center,
-                            fontSize = 12.sp,
-                            color = PrimaryRed,
-                            modifier = Modifier.padding(top = 12.dp)
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = { actions.onConfirmVerification() },
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryRed),
-                    enabled = !state.isLoading
-                ) {
-                    if (state.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            color = Color.White
-                        )
-                    } else {
-                        Text("CONFIRMADO", fontWeight = FontWeight.Bold)
-                    }
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        actions.onDismissVerificationDialog()
-                    },
-                    enabled = !state.isLoading
-                ) {
-                    Text("CANCELAR", color = Color.Gray)
-                }
-            },
-            containerColor = Color.Black.copy(alpha = 0.9f),
-            titleContentColor = PrimaryRed,
-            textContentColor = Color.White
-        )
-    }
-}
-
-@Composable
 private fun ProfileHeader(actions: ProfileActions) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = actions.onBack) {
@@ -295,7 +236,7 @@ private fun ProfileHeader(actions: ProfileActions) {
         }
         Spacer(modifier = Modifier.width(16.dp))
         Text(
-            text = "Editar Perfil",
+            text = "Mi Perfil",
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontWeight = FontWeight.Bold,
                 shadow = Shadow(color = Color.Black, blurRadius = 4f)
@@ -318,7 +259,7 @@ private fun ProfileMessages(state: ProfileState) {
 
     if (state.updateSuccess) {
         Text(
-            text = "Esencia actualizada con éxito",
+            text = "¡Esencia actualizada!",
             color = Color.Green,
             style = MaterialTheme.typography.labelSmall.copy(textAlign = TextAlign.Center),
             modifier = Modifier.padding(bottom = 12.dp)
@@ -332,14 +273,14 @@ private fun ProfileFormFields(state: ProfileState, actions: ProfileActions) {
         AnimaTextField(
             value = state.username,
             onValueChange = actions.onUsernameChange,
-            label = "Apodo del Viajero",
+            label = "Apodo",
             errorMessage = state.usernameError
         )
 
         AnimaTextField(
             value = state.email,
             onValueChange = actions.onEmailChange,
-            label = "Correo Vinculado",
+            label = "Correo Electrónico",
             errorMessage = state.emailError
         )
 
@@ -354,7 +295,7 @@ private fun ProfileFormFields(state: ProfileState, actions: ProfileActions) {
         AnimaTextField(
             value = state.currentPassword,
             onValueChange = actions.onCurrentPasswordChange,
-            label = "Contraseña Actual (obligatoria para cambios)",
+            label = "Contraseña Actual (requerida)",
             isPassword = true,
             errorMessage = state.currentPasswordError
         )
@@ -362,17 +303,14 @@ private fun ProfileFormFields(state: ProfileState, actions: ProfileActions) {
 }
 
 @Composable
-private fun SaveButton(
-    state: ProfileState,
-    actions: ProfileActions
-) {
+private fun SaveButton(state: ProfileState, actions: ProfileActions) {
     Button(
         onClick = actions.onSave,
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 16.dp)
             .height(50.dp),
-        enabled = !state.isLoading,
+        enabled = !state.isLoading && !state.isCheckingEmailVerification,
         shape = RoundedCornerShape(2.dp),
         colors = ButtonDefaults.buttonColors(containerColor = PrimaryRed)
     ) {
@@ -382,14 +320,4 @@ private fun SaveButton(
             Text("GUARDAR CAMBIOS", color = Color.White, fontWeight = FontWeight.Bold)
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ProfileScreenPreview() {
-    ProfileContent(
-        state = ProfileState(),
-        actions = ProfileActions(),
-        modifier = Modifier
-    )
 }

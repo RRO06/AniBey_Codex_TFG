@@ -1,6 +1,5 @@
 package com.example.anibey_codex_tfg.ui.screens.profile
 
-
 data class ProfileState(
     val username: String = "",
     val email: String = "",
@@ -12,10 +11,9 @@ data class ProfileState(
     val passwordError: String? = null,
     val currentPasswordError: String? = null,
     val generalError: String? = null,
-    val isLoading: Boolean = false,
+    val isLoading: Boolean = true,
     val updateSuccess: Boolean = false,
     val isDiscardDialogOpen: Boolean = false,
-    val showEmailVerificationDialog: Boolean = false,
-    val emailVerificationCountdown: Int = 0,
-    val isCheckingEmailVerification: Boolean = false
+    val isCheckingEmailVerification: Boolean = false,
+    val shouldNavigateToWelcome: Boolean = false
 )
